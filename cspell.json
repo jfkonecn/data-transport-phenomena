@@ -1,1 +1,1 @@
-{"version":"0.2","language":"en","words":["callconv","usize","comptime"],"flagWords":[]}
+{"flagWords":[],"version":"0.2","words":["callconv","usize","comptime","deinit","vtable","anytype","anyopaque"],"language":"en"}

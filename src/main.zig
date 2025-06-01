@@ -89,8 +89,9 @@ pub fn main() !void {
 
     const num_runs = 10;
 
-    var log_alloc_builder = LogAllocator.init(allocator);
     for (0..num_runs) |run_index| {
+        var log_alloc_builder = LogAllocator.init(allocator);
+        defer log_alloc_builder.deinit();
         const data = try allocator.dupe(u8, original_data);
         defer allocator.free(data);
         const log_alloc = log_alloc_builder.allocator();
@@ -101,5 +102,6 @@ pub fn main() !void {
         algorithm(data);
         const cycles = readCpuTimer() - start;
         try stdout.print("Run {d}: {d} ns\n", .{ run_index + 1, cycles });
+        try log_alloc_builder.printLog();
     }
 }
