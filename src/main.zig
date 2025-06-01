@@ -1,5 +1,6 @@
 const std = @import("std");
 const sort = @import("sort.zig");
+const LogAllocator = @import("log-allocator.zig").LogAllocator;
 
 extern fn readCpuTimer() callconv(.C) u64;
 const stdout = std.io.getStdOut().writer();
@@ -64,7 +65,6 @@ pub fn main() !void {
 
     const algorithm_name = args[1];
     const file_path = args[2];
-
     const algorithm: *const AlgorithmFn = blk: {
         if (std.mem.eql(u8, algorithm_name, "quick-sort")) {
             break :blk sort.quickSort;
@@ -89,9 +89,13 @@ pub fn main() !void {
 
     const num_runs = 10;
 
+    var log_alloc_builder = LogAllocator.init(allocator);
     for (0..num_runs) |run_index| {
         const data = try allocator.dupe(u8, original_data);
         defer allocator.free(data);
+        const log_alloc = log_alloc_builder.allocator();
+        const temp = try log_alloc.alloc(u8, 32);
+        defer log_alloc.free(temp);
 
         const start = readCpuTimer();
         algorithm(data);
