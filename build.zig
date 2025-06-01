@@ -116,4 +116,19 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run unit tests");
     //test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_exe_unit_tests.step);
+
+    const test_files = [_][]const u8{
+        "src/sort.zig",
+    };
+
+    for (test_files) |file_path| {
+        const test_exe = b.addRunArtifact(b.addTest(.{
+            .root_module = b.createModule(.{
+                .root_source_file = b.path(file_path),
+                .target = target,
+                .optimize = optimize,
+            }),
+        }));
+        test_step.dependOn(&test_exe.step);
+    }
 }

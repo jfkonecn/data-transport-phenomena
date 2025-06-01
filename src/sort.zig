@@ -1,7 +1,7 @@
 const std = @import("std");
-const Allocator = std.heap.Allocator;
+const Allocator = std.mem.Allocator;
 
-pub fn quickSort(_: Allocator, slice: []u8) void {
+pub fn quickSort(allocator: Allocator, slice: []u8) void {
     if (slice.len <= 1) return;
 
     const pivot = slice[slice.len / 2];
@@ -22,39 +22,35 @@ pub fn quickSort(_: Allocator, slice: []u8) void {
         }
     }
 
-    quickSort(slice[0 .. right + 1]);
-    quickSort(slice[left..]);
+    quickSort(allocator, slice[0 .. right + 1]);
+    quickSort(allocator, slice[left..]);
 }
 
 test "quicksort sorts integers" {
-    var data = [_]i32{ 9, 3, 7, 1, 5, 4, 8, 2, 6, 0 };
+    var data = [_]u8{ 9, 3, 7, 1, 5, 4, 8, 2, 6, 0 };
     quickSort(std.testing.allocator, &data);
 
     for (data, 0..) |value, i| {
-        try std.testing.expectEqual(@as(i32, @intCast(i)), value);
+        try std.testing.expectEqual(@as(u8, @intCast(i)), value);
     }
 }
 
 test "quicksort handles empty array" {
-    var data = [_]i32{};
+    var data = [_]u8{};
     quickSort(std.testing.allocator, &data);
     try std.testing.expect(data.len == 0);
 }
 
-test "quicksort handles empty array2" {
-    try std.testing.expect(false);
-}
-
 test "quicksort handles already sorted input" {
-    var data = [_]i32{ 0, 1, 2, 3, 4 };
+    var data = [_]u8{ 0, 1, 2, 3, 4 };
     quickSort(std.testing.allocator, &data);
     for (data, 0..) |value, i| {
-        try std.testing.expectEqual(@as(i32, @intCast(i)), value);
+        try std.testing.expectEqual(@as(u8, @intCast(i)), value);
     }
 }
 
 test "quicksort handles all-equal values" {
-    var data = [_]i32{ 42, 42, 42, 42 };
+    var data = [_]u8{ 42, 42, 42, 42 };
     quickSort(std.testing.allocator, &data);
     for (data) |v| {
         try std.testing.expectEqual(42, v);
