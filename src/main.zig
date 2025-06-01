@@ -6,7 +6,7 @@ extern fn readCpuTimer() callconv(.C) u64;
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 
-const AlgorithmFn = fn ([]u8) void;
+const AlgorithmFn = fn (std.mem.Allocator, []u8) void;
 
 fn print_clock_speed() !void {
     const sleep_time = 1_000_000_000; // 1 second in nanoseconds
@@ -96,12 +96,12 @@ pub fn main() !void {
         defer allocator.free(data);
         const log_alloc = log_alloc_builder.allocator();
         const temp = try log_alloc.alloc(u8, 32);
-        defer log_alloc.free(temp);
+        log_alloc.free(temp);
 
         const start = readCpuTimer();
-        algorithm(data);
+        algorithm(log_alloc, data);
         const cycles = readCpuTimer() - start;
-        try stdout.print("Run {d}: {d} ns\n", .{ run_index + 1, cycles });
+        try stdout.print("Run {d}: {d} cycles\n", .{ run_index + 1, cycles });
         try log_alloc_builder.printLog();
     }
 }
