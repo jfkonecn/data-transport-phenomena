@@ -1,6 +1,6 @@
 const std = @import("std");
 const sort = @import("sort.zig");
-const LogAllocator = @import("log-allocator.zig").LogAllocator;
+const LogAllocator = @import("LogAllocator.zig").LogAllocator;
 
 extern fn readCpuTimer() callconv(.C) u64;
 const stdout = std.io.getStdOut().writer();
