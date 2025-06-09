@@ -31,6 +31,7 @@ pub fn main() !void {
     const available_algorithms = [_][]const u8{
         "quick-sort",
         "bubble-sort",
+        "merge-sort",
     };
 
     if (args.len < 2 or std.mem.eql(u8, args[1], "--help")) {
@@ -63,18 +64,7 @@ pub fn main() !void {
         return error.NoBinaryFileInput;
     }
 
-    const algorithm_name = args[1];
     const file_path = args[2];
-    const algorithm: *const AlgorithmFn = blk: {
-        if (std.mem.eql(u8, algorithm_name, "quick-sort")) {
-            break :blk sort.quickSort;
-        } else if (std.mem.eql(u8, algorithm_name, "bubble-sort")) {
-            break :blk sort.bubbleSort;
-        } else {
-            try stderr.print("Unknown algorithm: {s}\nUse --help to see available options.\n", .{algorithm_name});
-            std.process.exit(1);
-        }
-    };
 
     const file = try std.fs.cwd().openFile(file_path, .{ .mode = .read_only });
     defer file.close();
@@ -89,17 +79,24 @@ pub fn main() !void {
 
     const num_runs = 10;
 
+    const algorithm_name = args[1];
     for (0..num_runs) |run_index| {
         var log_alloc_builder = LogAllocator.init(allocator);
         defer log_alloc_builder.deinit();
         const data = try allocator.dupe(u8, original_data);
         defer allocator.free(data);
         const log_alloc = log_alloc_builder.allocator();
-        const temp = try log_alloc.alloc(u8, 32);
-        log_alloc.free(temp);
-
         const start = readCpuTimer();
-        algorithm(log_alloc, data);
+        if (std.mem.eql(u8, algorithm_name, "quick-sort")) {
+            sort.quickSort(data);
+        } else if (std.mem.eql(u8, algorithm_name, "bubble-sort")) {
+            sort.bubbleSort(data);
+        } else if (std.mem.eql(u8, algorithm_name, "merge-sort")) {
+            try sort.mergeSort(log_alloc, data);
+        } else {
+            try stderr.print("Unknown algorithm: {s}\nUse --help to see available options.\n", .{algorithm_name});
+            std.process.exit(1);
+        }
         const cycles = readCpuTimer() - start;
         try stdout.print("Run {d}: {d} cycles\n", .{ run_index + 1, cycles });
         try log_alloc_builder.printLog();
