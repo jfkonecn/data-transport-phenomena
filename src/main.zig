@@ -2,8 +2,6 @@ const std = @import("std");
 const sort = @import("sort.zig");
 const LogAllocator = @import("LogAllocator.zig").LogAllocator;
 
-
-
 extern fn readCpuTimer() callconv(.C) u64;
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
@@ -28,7 +26,7 @@ fn getOutDirArg(args: []const [:0]u8) []const u8 {
     return ".";
 }
 
-fn print_clock_speed() !void {
+fn print_clock_speed() !u64 {
     const sleep_time = 1_000_000_000; // 1 second in nanoseconds
 
     const start_cycles = readCpuTimer();
@@ -41,6 +39,7 @@ fn print_clock_speed() !void {
         delta_cycles,
         delta_cycles / 1_000_000,
     });
+    return delta_cycles;
 }
 
 pub fn main() !void {
@@ -75,6 +74,7 @@ pub fn main() !void {
     const extra_args = args[5..];
     const out_dir = getOutDirArg(extra_args);
 
+    const data_file_name = std.fs.path.basename(file_path);
     const file = try std.fs.cwd().openFile(file_path, .{ .mode = .read_only });
     defer file.close();
 
@@ -83,9 +83,7 @@ pub fn main() !void {
     defer allocator.free(original_data);
     _ = try file.readAll(original_data);
 
-    try print_clock_speed();
-
-    const log_filename = try std.fmt.allocPrint(allocator, "{s}/{s}_{s}.log", .{ out_dir, test_name, @tagName(test_type) });
+    const log_filename = try std.fmt.allocPrint(allocator, "{s}/{s}_{s}_{s}.csv", .{ out_dir, algorithm_name, test_name, @tagName(test_type) });
 
     defer allocator.free(log_filename);
     const log_file = try std.fs.cwd().createFile(log_filename, .{ .truncate = true });
@@ -96,16 +94,28 @@ pub fn main() !void {
         .memory => 1,
     };
 
+    try stdout.print("Running {s} Test...\n", .{algorithm_name});
     var allocator_to_use = allocator;
-    if (test_type == .memory) {
-        const LogAlloc = LogAllocator(@TypeOf(log_writer));
-        var log_allocator = LogAlloc.init(allocator, log_writer);
-        allocator_to_use = log_allocator.allocator();
+    var cpu_clock_hz: u64 = 0;
+
+    switch (test_type) {
+        .cpu => {
+            cpu_clock_hz = try print_clock_speed();
+            try log_writer.print("run_number,cycles,cpu_clock_hz,algorithm,file,file_size_bytes", .{});
+        },
+        .memory => {
+            const LogAlloc = LogAllocator(@TypeOf(log_writer));
+            const stat = try file.stat();
+            var log_allocator = try LogAlloc.init(allocator, log_writer, algorithm_name, data_file_name, stat.size);
+            allocator_to_use = log_allocator.allocator();
+        },
     }
 
     for (0..runs) |run_index| {
         const data = try allocator.dupe(u8, original_data);
         defer allocator.free(data);
+
+        try stdout.print("Run {d}\n", .{run_index + 1});
 
         const start = readCpuTimer();
 
@@ -123,9 +133,7 @@ pub fn main() !void {
         const cycles = readCpuTimer() - start;
 
         if (test_type == .cpu) {
-            try log_writer.print("Run {d}: {d} cycles\n", .{ run_index + 1, cycles });
+            try log_writer.print("\n{d},{d},{d},{s},{s},{d}", .{ run_index + 1, cycles, cpu_clock_hz, algorithm_name, data_file_name, file_size });
         }
     }
 }
-
-
