@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -15,46 +16,48 @@ import (
 
 // CPUData represents a single CPU measurement
 type CPUData struct {
-	RunNumber   int
-	Cycles      int64
-	CPUClockHz  int64
-	Algorithm   string
-	File        string
+	RunNumber     int
+	Cycles        int64
+	CPUClockHz    int64
+	Algorithm     string
+	File          string
 	FileSizeBytes int
 }
 
 // MemoryData represents a single memory allocation/free event
 type MemoryData struct {
-	Alignment        string
-	AllocationType   string
+	Alignment           string
+	AllocationType      string
 	AllocationSizeBytes int64
-	Algorithm        string
-	File             string
-	FileSizeBytes    int
+	Algorithm           string
+	File                string
+	FileSizeBytes       int
 }
 
 // CPUStats holds aggregated statistics for CPU data
 type CPUStats struct {
-	Algorithm   string
-	File        string
+	Algorithm     string
+	RunName       string
+	File          string
 	FileSizeBytes int
-	Average     float64
-	StdDev      float64
-	Min         int64
-	Max         int64
-	Count       int
+	Average       float64
+	StdDev        float64
+	Min           int64
+	Max           int64
+	Count         int
 }
 
 // MemoryStats holds aggregated statistics for memory data
 type MemoryStats struct {
-	Algorithm           string
-	File                string
-	FileSizeBytes       int
-	TotalAllocated      int64
-	TotalFreed          int64
-	AverageMemoryUsage  float64
-	AllocationCount     int
-	FreeCount           int
+	Algorithm          string
+	RunName            string
+	File               string
+	FileSizeBytes      int
+	TotalAllocated     int64
+	TotalFreed         int64
+	AverageMemoryUsage float64
+	AllocationCount    int
+	FreeCount          int
 }
 
 func main() {
@@ -66,11 +69,19 @@ func main() {
 		}
 	}()
 
+	// Delete the default "Sheet1" that gets created
+	if err := f.DeleteSheet("Sheet1"); err != nil {
+		log.Printf("Warning: could not delete default Sheet1: %v", err)
+	}
+
 	// Process CPU data
 	cpuStats, err := processCPUData("results/sort/cpu")
 	if err != nil {
 		log.Fatalf("Error processing CPU data: %v", err)
 	}
+	
+	// Sort CPU stats
+	sortCPUStats(cpuStats)
 	
 	if err := writeCPUSheet(f, cpuStats); err != nil {
 		log.Fatalf("Error writing CPU sheet: %v", err)
@@ -82,6 +93,9 @@ func main() {
 		log.Fatalf("Error processing memory data: %v", err)
 	}
 	
+	// Sort memory stats
+	sortMemoryStats(memoryStats)
+	
 	if err := writeMemorySheet(f, memoryStats); err != nil {
 		log.Fatalf("Error writing memory sheet: %v", err)
 	}
@@ -92,6 +106,30 @@ func main() {
 	}
 
 	fmt.Println("Excel file 'aggregate_data.xlsx' created successfully!")
+}
+
+func sortCPUStats(stats []CPUStats) {
+	sort.Slice(stats, func(i, j int) bool {
+		if stats[i].Algorithm != stats[j].Algorithm {
+			return stats[i].Algorithm < stats[j].Algorithm
+		}
+		if stats[i].RunName != stats[j].RunName {
+			return stats[i].RunName < stats[j].RunName
+		}
+		return stats[i].FileSizeBytes < stats[j].FileSizeBytes
+	})
+}
+
+func sortMemoryStats(stats []MemoryStats) {
+	sort.Slice(stats, func(i, j int) bool {
+		if stats[i].Algorithm != stats[j].Algorithm {
+			return stats[i].Algorithm < stats[j].Algorithm
+		}
+		if stats[i].RunName != stats[j].RunName {
+			return stats[i].RunName < stats[j].RunName
+		}
+		return stats[i].FileSizeBytes < stats[j].FileSizeBytes
+	})
 }
 
 func processCPUData(cpuDir string) ([]CPUStats, error) {
@@ -110,6 +148,21 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 			log.Printf("Error reading %s: %v", file, err)
 			continue
 		}
+
+		// Extract algorithm and run name from filename
+		baseName := filepath.Base(file)
+		// Remove .csv extension
+		baseName = strings.TrimSuffix(baseName, ".csv")
+		// Split by underscore to get algorithm and run info
+		parts := strings.Split(baseName, "_")
+		if len(parts) < 3 {
+			log.Printf("Warning: invalid filename format: %s", file)
+			continue
+		}
+		
+		algorithm := parts[0]
+		runName := parts[1] // e.g., "i9"
+		fileInfo := strings.Join(parts[2:], "_") // e.g., "01_100.bin"
 
 		// Skip header
 		for i := 1; i < len(records); i++ {
@@ -137,22 +190,19 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 				continue
 			}
 			
-			algorithm := record[3]
-			file := record[4]
-			
 			fileSizeBytes, err := strconv.Atoi(record[5])
 			if err != nil {
 				log.Printf("Warning: invalid file size bytes in %s at line %d: %v", file, i+1, err)
 				continue
 			}
 
-			key := fmt.Sprintf("%s_%s", algorithm, file)
+			key := fmt.Sprintf("%s_%s_%s", algorithm, runName, fileInfo)
 			algorithmFileMap[key] = append(algorithmFileMap[key], CPUData{
 				RunNumber:     runNumber,
 				Cycles:        cycles,
 				CPUClockHz:    cpuClockHz,
 				Algorithm:     algorithm,
-				File:          file,
+				File:          fileInfo,
 				FileSizeBytes: fileSizeBytes,
 			})
 		}
@@ -165,15 +215,16 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 		}
 
 		parts := strings.Split(key, "_")
-		if len(parts) < 2 {
+		if len(parts) < 3 {
 			log.Printf("Warning: invalid key format: %s", key)
 			continue
 		}
 
 		algorithm := parts[0]
-		file := strings.Join(parts[1:], "_")
+		runName := parts[1]
+		file := strings.Join(parts[2:], "_")
 
-		stats := calculateCPUStats(data, algorithm, file)
+		stats := calculateCPUStats(data, algorithm, runName, file)
 		allStats = append(allStats, stats)
 	}
 
@@ -197,7 +248,67 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 			continue
 		}
 
-		// Skip header
+		// Extract algorithm and file info from filename
+		baseName := filepath.Base(file)
+		// Remove .csv extension
+		baseName = strings.TrimSuffix(baseName, ".csv")
+		// Split by underscore to get algorithm and file info
+		parts := strings.Split(baseName, "_")
+		if len(parts) < 3 {
+			log.Printf("Warning: invalid filename format: %s", file)
+			continue
+		}
+		
+		algorithm := parts[0]
+		runName := parts[1] // e.g., "i9"
+		fileInfo := strings.Join(parts[2:], "_") // e.g., "01_100.bin"
+		
+		// Extract file size from the file info (e.g., "01_100.bin" -> 100, "06_100K.bin" -> 100000)
+		fileSizeParts := strings.Split(fileInfo, "_")
+		if len(fileSizeParts) < 2 {
+			log.Printf("Warning: invalid file info format: %s", fileInfo)
+			continue
+		}
+		
+		fileSizeStr := fileSizeParts[len(fileSizeParts)-1] // Get the last part
+		// Remove .bin extension
+		fileSizeStr = strings.TrimSuffix(fileSizeStr, ".bin")
+		
+		// Handle suffixes like K (thousands), M (millions)
+		var multiplier int = 1
+		if strings.HasSuffix(fileSizeStr, "K") {
+			multiplier = 1000
+			fileSizeStr = strings.TrimSuffix(fileSizeStr, "K")
+		} else if strings.HasSuffix(fileSizeStr, "M") {
+			multiplier = 1000000
+			fileSizeStr = strings.TrimSuffix(fileSizeStr, "M")
+		}
+		
+		fileSizeNum, err := strconv.Atoi(fileSizeStr)
+		if err != nil {
+			log.Printf("Warning: invalid file size in filename %s: %v", file, err)
+			continue
+		}
+		
+		fileSizeBytes := fileSizeNum * multiplier
+
+		// If file has no data (only header), create zero stats
+		if len(records) <= 1 {
+			allStats = append(allStats, MemoryStats{
+				Algorithm:          algorithm,
+				RunName:            runName,
+				File:               fileInfo,
+				FileSizeBytes:      fileSizeBytes,
+				TotalAllocated:     0,
+				TotalFreed:         0,
+				AverageMemoryUsage:  0,
+				AllocationCount:    0,
+				FreeCount:          0,
+			})
+			continue
+		}
+
+		// Process records with data
 		for i := 1; i < len(records); i++ {
 			record := records[i]
 			if len(record) < 6 {
@@ -213,23 +324,14 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 				log.Printf("Warning: invalid allocation size bytes in %s at line %d: %v", file, i+1, err)
 				continue
 			}
-			
-			algorithm := record[3]
-			file := record[4]
-			
-			fileSizeBytes, err := strconv.Atoi(record[5])
-			if err != nil {
-				log.Printf("Warning: invalid file size bytes in %s at line %d: %v", file, i+1, err)
-				continue
-			}
 
-			key := fmt.Sprintf("%s_%s", algorithm, file)
+			key := fmt.Sprintf("%s_%s_%s", algorithm, runName, fileInfo)
 			algorithmFileMap[key] = append(algorithmFileMap[key], MemoryData{
 				Alignment:           alignment,
 				AllocationType:      allocationType,
 				AllocationSizeBytes: allocationSizeBytes,
 				Algorithm:           algorithm,
-				File:                file,
+				File:                fileInfo,
 				FileSizeBytes:       fileSizeBytes,
 			})
 		}
@@ -242,28 +344,30 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 		}
 
 		parts := strings.Split(key, "_")
-		if len(parts) < 2 {
+		if len(parts) < 3 {
 			log.Printf("Warning: invalid key format: %s", key)
 			continue
 		}
 
 		algorithm := parts[0]
-		file := strings.Join(parts[1:], "_")
+		runName := parts[1]
+		file := strings.Join(parts[2:], "_")
 
-		stats := calculateMemoryStats(data, algorithm, file)
+		stats := calculateMemoryStats(data, algorithm, runName, file)
 		allStats = append(allStats, stats)
 	}
 
 	return allStats, nil
 }
 
-func calculateCPUStats(data []CPUData, algorithm, file string) CPUStats {
+func calculateCPUStats(data []CPUData, algorithm, runName, file string) CPUStats {
 	if len(data) == 0 {
 		return CPUStats{Algorithm: algorithm, File: file}
 	}
 
 	var sum int64
-	var min, max int64 = data[0].Cycles, data[0].Cycles
+	var min = data[0].Cycles
+	var max = data[0].Cycles
 	fileSizeBytes := data[0].FileSizeBytes
 
 	for _, d := range data {
@@ -288,6 +392,7 @@ func calculateCPUStats(data []CPUData, algorithm, file string) CPUStats {
 
 	return CPUStats{
 		Algorithm:     algorithm,
+		RunName:       runName,
 		File:          file,
 		FileSizeBytes: fileSizeBytes,
 		Average:       average,
@@ -298,7 +403,7 @@ func calculateCPUStats(data []CPUData, algorithm, file string) CPUStats {
 	}
 }
 
-func calculateMemoryStats(data []MemoryData, algorithm, file string) MemoryStats {
+func calculateMemoryStats(data []MemoryData, algorithm, runName, file string) MemoryStats {
 	if len(data) == 0 {
 		return MemoryStats{Algorithm: algorithm, File: file}
 	}
@@ -312,11 +417,12 @@ func calculateMemoryStats(data []MemoryData, algorithm, file string) MemoryStats
 	var memorySamples []int64
 
 	for _, d := range data {
-		if d.AllocationType == "ALLOC" {
+		switch d.AllocationType {
+		case "ALLOC":
 			totalAllocated += d.AllocationSizeBytes
 			allocationCount++
 			currentMemory += d.AllocationSizeBytes
-		} else if d.AllocationType == "FREE" {
+		case "FREE":
 			totalFreed += d.AllocationSizeBytes
 			freeCount++
 			currentMemory -= d.AllocationSizeBytes
@@ -339,6 +445,7 @@ func calculateMemoryStats(data []MemoryData, algorithm, file string) MemoryStats
 
 	return MemoryStats{
 		Algorithm:          algorithm,
+		RunName:            runName,
 		File:               file,
 		FileSizeBytes:      fileSizeBytes,
 		TotalAllocated:     totalAllocated,
@@ -358,7 +465,7 @@ func writeCPUSheet(f *excelize.File, stats []CPUStats) error {
 	}
 
 	// Write headers
-	headers := []string{"Algorithm", "File", "File Size (bytes)", "Average Cycles", "Std Dev", "Min Cycles", "Max Cycles", "Sample Count"}
+	headers := []string{"Algorithm", "Run Name", "File", "File Size (bytes)", "Average Cycles", "Std Dev", "Min Cycles", "Max Cycles", "Sample Count"}
 	for i, header := range headers {
 		cell := fmt.Sprintf("%c1", 'A'+i)
 		if err := f.SetCellValue(sheetName, cell, header); err != nil {
@@ -372,25 +479,28 @@ func writeCPUSheet(f *excelize.File, stats []CPUStats) error {
 		if err := f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), stat.Algorithm); err != nil {
 			return fmt.Errorf("error setting algorithm for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), stat.File); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), stat.RunName); err != nil {
+			return fmt.Errorf("error setting run name for row %d: %w", row, err)
+		}
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), stat.File); err != nil {
 			return fmt.Errorf("error setting file for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), stat.FileSizeBytes); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), stat.FileSizeBytes); err != nil {
 			return fmt.Errorf("error setting file size for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), stat.Average); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), stat.Average); err != nil {
 			return fmt.Errorf("error setting average for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), stat.StdDev); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), stat.StdDev); err != nil {
 			return fmt.Errorf("error setting std dev for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), stat.Min); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("G%d", row), stat.Min); err != nil {
 			return fmt.Errorf("error setting min for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("G%d", row), stat.Max); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("H%d", row), stat.Max); err != nil {
 			return fmt.Errorf("error setting max for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("H%d", row), stat.Count); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("I%d", row), stat.Count); err != nil {
 			return fmt.Errorf("error setting count for row %d: %w", row, err)
 		}
 	}
@@ -415,7 +525,7 @@ func writeMemorySheet(f *excelize.File, stats []MemoryStats) error {
 	}
 
 	// Write headers
-	headers := []string{"Algorithm", "File", "File Size (bytes)", "Total Allocated (bytes)", "Total Freed (bytes)", "Average Memory Usage (bytes)", "Allocation Count", "Free Count"}
+	headers := []string{"Algorithm", "Run Name", "File", "File Size (bytes)", "Total Allocated (bytes)", "Total Freed (bytes)", "Average Memory Usage (bytes)", "Allocation Count", "Free Count"}
 	for i, header := range headers {
 		cell := fmt.Sprintf("%c1", 'A'+i)
 		if err := f.SetCellValue(sheetName, cell, header); err != nil {
@@ -429,25 +539,28 @@ func writeMemorySheet(f *excelize.File, stats []MemoryStats) error {
 		if err := f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), stat.Algorithm); err != nil {
 			return fmt.Errorf("error setting algorithm for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), stat.File); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), stat.RunName); err != nil {
+			return fmt.Errorf("error setting run name for row %d: %w", row, err)
+		}
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), stat.File); err != nil {
 			return fmt.Errorf("error setting file for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), stat.FileSizeBytes); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), stat.FileSizeBytes); err != nil {
 			return fmt.Errorf("error setting file size for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), stat.TotalAllocated); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), stat.TotalAllocated); err != nil {
 			return fmt.Errorf("error setting total allocated for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), stat.TotalFreed); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), stat.TotalFreed); err != nil {
 			return fmt.Errorf("error setting total freed for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), stat.AverageMemoryUsage); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("G%d", row), stat.AverageMemoryUsage); err != nil {
 			return fmt.Errorf("error setting average memory usage for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("G%d", row), stat.AllocationCount); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("H%d", row), stat.AllocationCount); err != nil {
 			return fmt.Errorf("error setting allocation count for row %d: %w", row, err)
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("H%d", row), stat.FreeCount); err != nil {
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("I%d", row), stat.FreeCount); err != nil {
 			return fmt.Errorf("error setting free count for row %d: %w", row, err)
 		}
 	}
@@ -477,4 +590,4 @@ func readCSV(filename string) ([][]string, error) {
 	}
 	
 	return records, nil
-} 
+}
