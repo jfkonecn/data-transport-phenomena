@@ -513,6 +513,11 @@ func writeCPUSheet(f *excelize.File, stats []CPUStats) error {
 		}
 	}
 
+	// Create charts
+	if err := createCPUCharts(f, sheetName, stats); err != nil {
+		return fmt.Errorf("error creating CPU charts: %w", err)
+	}
+
 	return nil
 }
 
@@ -571,6 +576,155 @@ func writeMemorySheet(f *excelize.File, stats []MemoryStats) error {
 		if err := f.SetColWidth(sheetName, col, col, 20); err != nil {
 			return fmt.Errorf("error setting column width for %s: %w", col, err)
 		}
+	}
+
+	// Create charts
+	if err := createMemoryCharts(f, sheetName, stats); err != nil {
+		return fmt.Errorf("error creating memory charts: %w", err)
+	}
+
+	return nil
+}
+
+func createCPUCharts(f *excelize.File, sheetName string, stats []CPUStats) error {
+	if len(stats) == 0 {
+		return nil
+	}
+
+	// Create a chart sheet for CPU performance comparison
+	chartSheetName := "CPU Charts"
+	_, err := f.NewSheet(chartSheetName)
+	if err != nil {
+		return fmt.Errorf("error creating CPU chart sheet: %w", err)
+	}
+
+	// Group data by algorithm for charting
+	algorithmData := make(map[string][]CPUStats)
+	for _, stat := range stats {
+		algorithmData[stat.Algorithm] = append(algorithmData[stat.Algorithm], stat)
+	}
+
+	// Create performance comparison chart
+	chartName := "CPU Performance Comparison"
+	chart := &excelize.Chart{
+		Type: excelize.Col,
+		Series: []excelize.ChartSeries{
+			{
+				Name:       "Average Cycles",
+				Categories: "CPU Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
+				Values:     "CPU Statistics!$E$2:$E$" + fmt.Sprintf("%d", len(stats)+1),
+			},
+		},
+		Title: excelize.ChartTitle{
+			Name: chartName,
+		},
+	}
+
+	// Add chart to the sheet
+	if err := f.AddChart(chartSheetName, "A1", chart); err != nil {
+		return fmt.Errorf("error adding CPU chart: %w", err)
+	}
+
+	// Create algorithm comparison chart
+	if err := createAlgorithmComparisonChart(f, chartSheetName, algorithmData, "K1"); err != nil {
+		return fmt.Errorf("error creating algorithm comparison chart: %w", err)
+	}
+
+	return nil
+}
+
+func createMemoryCharts(f *excelize.File, sheetName string, stats []MemoryStats) error {
+	if len(stats) == 0 {
+		return nil
+	}
+
+	// Create a chart sheet for memory analysis
+	chartSheetName := "Memory Charts"
+	_, err := f.NewSheet(chartSheetName)
+	if err != nil {
+		return fmt.Errorf("error creating memory chart sheet: %w", err)
+	}
+
+	// Create memory usage chart
+	chartName := "Memory Usage Analysis"
+	chart := &excelize.Chart{
+		Type: excelize.Col,
+		Series: []excelize.ChartSeries{
+			{
+				Name:       "Total Allocated",
+				Categories: "Memory Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
+				Values:     "Memory Statistics!$E$2:$E$" + fmt.Sprintf("%d", len(stats)+1),
+			},
+			{
+				Name:       "Total Freed",
+				Categories: "Memory Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
+				Values:     "Memory Statistics!$F$2:$F$" + fmt.Sprintf("%d", len(stats)+1),
+			},
+		},
+		Title: excelize.ChartTitle{
+			Name: chartName,
+		},
+	}
+
+	// Add chart to the sheet
+	if err := f.AddChart(chartSheetName, "A1", chart); err != nil {
+		return fmt.Errorf("error adding memory chart: %w", err)
+	}
+
+	// Create average memory usage chart
+	avgChart := &excelize.Chart{
+		Type: excelize.Line,
+		Series: []excelize.ChartSeries{
+			{
+				Name:       "Average Memory Usage",
+				Categories: "Memory Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
+				Values:     "Memory Statistics!$G$2:$G$" + fmt.Sprintf("%d", len(stats)+1),
+			},
+		},
+		Title: excelize.ChartTitle{
+			Name: "Average Memory Usage by File Size",
+		},
+	}
+
+	// Add average memory chart
+	if err := f.AddChart(chartSheetName, "K1", avgChart); err != nil {
+		return fmt.Errorf("error adding average memory chart: %w", err)
+	}
+
+	return nil
+}
+
+func createAlgorithmComparisonChart(f *excelize.File, sheetName string, algorithmData map[string][]CPUStats, position string) error {
+	// Create a chart comparing algorithms
+	chart := &excelize.Chart{
+		Type: excelize.Col,
+		Series: []excelize.ChartSeries{},
+		Title: excelize.ChartTitle{
+			Name: "Algorithm Performance Comparison",
+		},
+	}
+
+	// Add series for each algorithm
+	for algorithm, data := range algorithmData {
+		if len(data) > 0 {
+			// Calculate average performance for this algorithm
+			var totalCycles float64
+			for _, stat := range data {
+				totalCycles += stat.Average
+			}
+			avgCycles := totalCycles / float64(len(data))
+
+			// Add to chart series
+			chart.Series = append(chart.Series, excelize.ChartSeries{
+				Name:   algorithm,
+				Values: fmt.Sprintf("%f", avgCycles),
+			})
+		}
+	}
+
+	// Add chart to the sheet
+	if err := f.AddChart(sheetName, position, chart); err != nil {
+		return fmt.Errorf("error adding algorithm comparison chart: %w", err)
 	}
 
 	return nil
