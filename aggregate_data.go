@@ -607,7 +607,7 @@ func createCPUCharts(f *excelize.File, sheetName string, stats []CPUStats) error
 	// Create performance comparison chart
 	chartName := "CPU Performance Comparison"
 	chart := &excelize.Chart{
-		Type: excelize.Col,
+		Type: excelize.Scatter,
 		Series: []excelize.ChartSeries{
 			{
 				Name:       "Average Cycles",
