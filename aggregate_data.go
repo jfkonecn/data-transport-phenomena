@@ -56,6 +56,7 @@ type MemoryStats struct {
 	TotalAllocated     int64
 	TotalFreed         int64
 	AverageMemoryUsage float64
+	MaxMemoryUsage     int64
 	AllocationCount    int
 	FreeCount          int
 }
@@ -263,48 +264,8 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 		runName := parts[1]                      // e.g., "i9"
 		fileInfo := strings.Join(parts[2:], "_") // e.g., "01_100.bin"
 
-		// Extract file size from the file info (e.g., "01_100.bin" -> 100, "06_100K.bin" -> 100000)
-		fileSizeParts := strings.Split(fileInfo, "_")
-		if len(fileSizeParts) < 2 {
-			log.Printf("Warning: invalid file info format: %s", fileInfo)
-			continue
-		}
-
-		fileSizeStr := fileSizeParts[len(fileSizeParts)-1] // Get the last part
-		// Remove .bin extension
-		fileSizeStr = strings.TrimSuffix(fileSizeStr, ".bin")
-
-		// Handle suffixes like K (thousands), M (millions)
-		var multiplier int = 1
-		if strings.HasSuffix(fileSizeStr, "K") {
-			multiplier = 1000
-			fileSizeStr = strings.TrimSuffix(fileSizeStr, "K")
-		} else if strings.HasSuffix(fileSizeStr, "M") {
-			multiplier = 1000000
-			fileSizeStr = strings.TrimSuffix(fileSizeStr, "M")
-		}
-
-		fileSizeNum, err := strconv.Atoi(fileSizeStr)
-		if err != nil {
-			log.Printf("Warning: invalid file size in filename %s: %v", file, err)
-			continue
-		}
-
-		fileSizeBytes := fileSizeNum * multiplier
-
-		// If file has no data (only header), create zero stats
+		// If file has no data (only header), skip it
 		if len(records) <= 1 {
-			allStats = append(allStats, MemoryStats{
-				Algorithm:          algorithm,
-				RunName:            runName,
-				File:               fileInfo,
-				FileSizeBytes:      fileSizeBytes,
-				TotalAllocated:     0,
-				TotalFreed:         0,
-				AverageMemoryUsage: 0,
-				AllocationCount:    0,
-				FreeCount:          0,
-			})
 			continue
 		}
 
@@ -322,6 +283,13 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 			allocationSizeBytes, err := strconv.ParseInt(record[2], 10, 64)
 			if err != nil {
 				log.Printf("Warning: invalid allocation size bytes in %s at line %d: %v", file, i+1, err)
+				continue
+			}
+
+			// Get file size from the CSV data (same as CPU data)
+			fileSizeBytes, err := strconv.Atoi(record[5])
+			if err != nil {
+				log.Printf("Warning: invalid file size bytes in %s at line %d: %v", file, i+1, err)
 				continue
 			}
 
@@ -435,8 +403,12 @@ func calculateMemoryStats(data []MemoryData, algorithm, runName, file string) Me
 
 	// Calculate average memory usage
 	var totalMemory int64
+	var maxMemory int64
 	for _, mem := range memorySamples {
 		totalMemory += mem
+		if mem > maxMemory {
+			maxMemory = mem
+		}
 	}
 	averageMemoryUsage := float64(0)
 	if len(memorySamples) > 0 {
@@ -451,6 +423,7 @@ func calculateMemoryStats(data []MemoryData, algorithm, runName, file string) Me
 		TotalAllocated:     totalAllocated,
 		TotalFreed:         totalFreed,
 		AverageMemoryUsage: averageMemoryUsage,
+		MaxMemoryUsage:     maxMemory,
 		AllocationCount:    allocationCount,
 		FreeCount:          freeCount,
 	}
@@ -598,36 +571,105 @@ func createCPUCharts(f *excelize.File, sheetName string, stats []CPUStats) error
 		return fmt.Errorf("error creating CPU chart sheet: %w", err)
 	}
 
-	// Group data by algorithm for charting
-	algorithmData := make(map[string][]CPUStats)
+	// Group data by run name
+	runData := make(map[string][]CPUStats)
 	for _, stat := range stats {
-		algorithmData[stat.Algorithm] = append(algorithmData[stat.Algorithm], stat)
+		runData[stat.RunName] = append(runData[stat.RunName], stat)
 	}
 
-	// Create performance comparison chart
-	chartName := "CPU Performance Comparison"
-	chart := &excelize.Chart{
-		Type: excelize.Scatter,
-		Series: []excelize.ChartSeries{
-			{
-				Name:       "Average Cycles",
-				Categories: "CPU_Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
-				Values:     "CPU_Statistics!$E$2:$E$" + fmt.Sprintf("%d", len(stats)+1),
-			},
-		},
-		Title: excelize.ChartTitle{
-			Name: chartName,
-		},
+	// Create a table for each run name
+	currentRow := 1
+	for runName, runStats := range runData {
+		// Group by algorithm within this run
+		algorithmData := make(map[string][]CPUStats)
+		for _, stat := range runStats {
+			algorithmData[stat.Algorithm] = append(algorithmData[stat.Algorithm], stat)
+		}
+
+		// Get all unique file sizes
+		fileSizes := make(map[int]bool)
+		for _, stat := range runStats {
+			fileSizes[stat.FileSizeBytes] = true
+		}
+
+		// Convert to sorted slice
+		var sortedFileSizes []int
+		for size := range fileSizes {
+			sortedFileSizes = append(sortedFileSizes, size)
+		}
+		sort.Ints(sortedFileSizes)
+
+		// Get sorted algorithm names
+		var algorithms []string
+		for algorithm := range algorithmData {
+			algorithms = append(algorithms, algorithm)
+		}
+		sort.Strings(algorithms)
+
+		// Write table title
+		titleCell := fmt.Sprintf("A%d", currentRow)
+		if err := f.SetCellValue(chartSheetName, titleCell, fmt.Sprintf("CPU Performance - %s", runName)); err != nil {
+			return fmt.Errorf("error setting table title: %w", err)
+		}
+		currentRow++
+
+		// Write header row
+		headerCell := fmt.Sprintf("A%d", currentRow)
+		if err := f.SetCellValue(chartSheetName, headerCell, "File Size (bytes)"); err != nil {
+			return fmt.Errorf("error setting header: %w", err)
+		}
+		for i, algorithm := range algorithms {
+			cell := fmt.Sprintf("%c%d", 'B'+i, currentRow)
+			if err := f.SetCellValue(chartSheetName, cell, algorithm); err != nil {
+				return fmt.Errorf("error setting algorithm header: %w", err)
+			}
+		}
+		currentRow++
+
+		// Write data rows
+		for _, fileSize := range sortedFileSizes {
+			// File size column
+			fileSizeCell := fmt.Sprintf("A%d", currentRow)
+			if err := f.SetCellValue(chartSheetName, fileSizeCell, fileSize); err != nil {
+				return fmt.Errorf("error setting file size: %w", err)
+			}
+
+			// Algorithm columns
+			for i, algorithm := range algorithms {
+				cell := fmt.Sprintf("%c%d", 'B'+i, currentRow)
+				// Find the stats for this algorithm and file size
+				var avgCycles float64
+				found := false
+				for _, stat := range algorithmData[algorithm] {
+					if stat.FileSizeBytes == fileSize {
+						avgCycles = stat.Average
+						found = true
+						break
+					}
+				}
+				if found {
+					if err := f.SetCellValue(chartSheetName, cell, avgCycles); err != nil {
+						return fmt.Errorf("error setting average cycles: %w", err)
+					}
+				} else {
+					if err := f.SetCellValue(chartSheetName, cell, ""); err != nil {
+						return fmt.Errorf("error setting empty cell: %w", err)
+					}
+				}
+			}
+			currentRow++
+		}
+
+		// Add spacing between tables
+		currentRow += 3
 	}
 
-	// Add chart to the sheet
-	if err := f.AddChart(chartSheetName, "A1", chart); err != nil {
-		return fmt.Errorf("error adding CPU chart: %w", err)
+	// Auto-size columns
+	if err := f.SetColWidth(chartSheetName, "A", "A", 20); err != nil {
+		return fmt.Errorf("error setting column width: %w", err)
 	}
-
-	// Create algorithm comparison chart
-	if err := createAlgorithmComparisonChart(f, chartSheetName, algorithmData, "K1"); err != nil {
-		return fmt.Errorf("error creating algorithm comparison chart: %w", err)
+	if err := f.SetColWidth(chartSheetName, "B", "Z", 15); err != nil {
+		return fmt.Errorf("error setting column width: %w", err)
 	}
 
 	return nil
@@ -645,86 +687,106 @@ func createMemoryCharts(f *excelize.File, sheetName string, stats []MemoryStats)
 		return fmt.Errorf("error creating memory chart sheet: %w", err)
 	}
 
-	// Create memory usage chart
-	chartName := "Memory Usage Analysis"
-	chart := &excelize.Chart{
-		Type: excelize.Col,
-		Series: []excelize.ChartSeries{
-			{
-				Name:       "Total Allocated",
-				Categories: "Memory_Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
-				Values:     "Memory_Statistics!$E$2:$E$" + fmt.Sprintf("%d", len(stats)+1),
-			},
-			{
-				Name:       "Total Freed",
-				Categories: "Memory_Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
-				Values:     "Memory_Statistics!$F$2:$F$" + fmt.Sprintf("%d", len(stats)+1),
-			},
-		},
-		Title: excelize.ChartTitle{
-			Name: chartName,
-		},
+	// Group data by run name
+	runData := make(map[string][]MemoryStats)
+	for _, stat := range stats {
+		runData[stat.RunName] = append(runData[stat.RunName], stat)
 	}
 
-	// Add chart to the sheet
-	if err := f.AddChart(chartSheetName, "A1", chart); err != nil {
-		return fmt.Errorf("error adding memory chart: %w", err)
-	}
-
-	// Create average memory usage chart
-	avgChart := &excelize.Chart{
-		Type: excelize.Line,
-		Series: []excelize.ChartSeries{
-			{
-				Name:       "Average Memory Usage",
-				Categories: "Memory_Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
-				Values:     "Memory_Statistics!$G$2:$G$" + fmt.Sprintf("%d", len(stats)+1),
-			},
-		},
-		Title: excelize.ChartTitle{
-			Name: "Average Memory Usage by File Size",
-		},
-	}
-
-	// Add average memory chart
-	if err := f.AddChart(chartSheetName, "K1", avgChart); err != nil {
-		return fmt.Errorf("error adding average memory chart: %w", err)
-	}
-
-	return nil
-}
-
-func createAlgorithmComparisonChart(f *excelize.File, sheetName string, algorithmData map[string][]CPUStats, position string) error {
-	// Create a chart comparing algorithms
-	chart := &excelize.Chart{
-		Type:   excelize.Col,
-		Series: []excelize.ChartSeries{},
-		Title: excelize.ChartTitle{
-			Name: "Algorithm Performance Comparison",
-		},
-	}
-
-	// Add series for each algorithm
-	for algorithm, data := range algorithmData {
-		if len(data) > 0 {
-			// Calculate average performance for this algorithm
-			var totalCycles float64
-			for _, stat := range data {
-				totalCycles += stat.Average
-			}
-			avgCycles := totalCycles / float64(len(data))
-
-			// Add to chart series
-			chart.Series = append(chart.Series, excelize.ChartSeries{
-				Name:   algorithm,
-				Values: fmt.Sprintf("%f", avgCycles),
-			})
+	// Create a table for each run name
+	currentRow := 1
+	for runName, runStats := range runData {
+		// Group by algorithm within this run
+		algorithmData := make(map[string][]MemoryStats)
+		for _, stat := range runStats {
+			algorithmData[stat.Algorithm] = append(algorithmData[stat.Algorithm], stat)
 		}
+
+		// Get all unique file sizes
+		fileSizes := make(map[int]bool)
+		for _, stat := range runStats {
+			fileSizes[stat.FileSizeBytes] = true
+		}
+
+		// Convert to sorted slice
+		var sortedFileSizes []int
+		for size := range fileSizes {
+			sortedFileSizes = append(sortedFileSizes, size)
+		}
+		sort.Ints(sortedFileSizes)
+
+		// Get sorted algorithm names
+		var algorithms []string
+		for algorithm := range algorithmData {
+			algorithms = append(algorithms, algorithm)
+		}
+		sort.Strings(algorithms)
+
+		// Write table title
+		titleCell := fmt.Sprintf("A%d", currentRow)
+		if err := f.SetCellValue(chartSheetName, titleCell, fmt.Sprintf("Memory Usage - %s", runName)); err != nil {
+			return fmt.Errorf("error setting table title: %w", err)
+		}
+		currentRow++
+
+		// Write header row
+		headerCell := fmt.Sprintf("A%d", currentRow)
+		if err := f.SetCellValue(chartSheetName, headerCell, "File Size (bytes)"); err != nil {
+			return fmt.Errorf("error setting header: %w", err)
+		}
+		for i, algorithm := range algorithms {
+			cell := fmt.Sprintf("%c%d", 'B'+i, currentRow)
+			if err := f.SetCellValue(chartSheetName, cell, algorithm); err != nil {
+				return fmt.Errorf("error setting algorithm header: %w", err)
+			}
+		}
+		currentRow++
+
+		// Write data rows
+		for _, fileSize := range sortedFileSizes {
+			// File size column
+			fileSizeCell := fmt.Sprintf("A%d", currentRow)
+			if err := f.SetCellValue(chartSheetName, fileSizeCell, fileSize); err != nil {
+				return fmt.Errorf("error setting file size: %w", err)
+			}
+
+			// Algorithm columns
+			for i, algorithm := range algorithms {
+				cell := fmt.Sprintf("%c%d", 'B'+i, currentRow)
+				// Find the stats for this algorithm and file size
+				var maxMemory int64
+				found := false
+				for _, stat := range algorithmData[algorithm] {
+					if stat.FileSizeBytes == fileSize {
+						// Use the maximum memory usage from the MemoryStats
+						maxMemory = stat.MaxMemoryUsage
+						found = true
+						break
+					}
+				}
+				if found {
+					if err := f.SetCellValue(chartSheetName, cell, maxMemory); err != nil {
+						return fmt.Errorf("error setting max memory: %w", err)
+					}
+				} else {
+					if err := f.SetCellValue(chartSheetName, cell, ""); err != nil {
+						return fmt.Errorf("error setting empty cell: %w", err)
+					}
+				}
+			}
+			currentRow++
+		}
+
+		// Add spacing between tables
+		currentRow += 3
 	}
 
-	// Add chart to the sheet
-	if err := f.AddChart(sheetName, position, chart); err != nil {
-		return fmt.Errorf("error adding algorithm comparison chart: %w", err)
+	// Auto-size columns
+	if err := f.SetColWidth(chartSheetName, "A", "A", 20); err != nil {
+		return fmt.Errorf("error setting column width: %w", err)
+	}
+	if err := f.SetColWidth(chartSheetName, "B", "Z", 15); err != nil {
+		return fmt.Errorf("error setting column width: %w", err)
 	}
 
 	return nil
