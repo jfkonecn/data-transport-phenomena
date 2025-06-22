@@ -79,10 +79,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error processing CPU data: %v", err)
 	}
-	
+
 	// Sort CPU stats
 	sortCPUStats(cpuStats)
-	
+
 	if err := writeCPUSheet(f, cpuStats); err != nil {
 		log.Fatalf("Error writing CPU sheet: %v", err)
 	}
@@ -92,10 +92,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error processing memory data: %v", err)
 	}
-	
+
 	// Sort memory stats
 	sortMemoryStats(memoryStats)
-	
+
 	if err := writeMemorySheet(f, memoryStats); err != nil {
 		log.Fatalf("Error writing memory sheet: %v", err)
 	}
@@ -159,9 +159,9 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 			log.Printf("Warning: invalid filename format: %s", file)
 			continue
 		}
-		
+
 		algorithm := parts[0]
-		runName := parts[1] // e.g., "i9"
+		runName := parts[1]                      // e.g., "i9"
 		fileInfo := strings.Join(parts[2:], "_") // e.g., "01_100.bin"
 
 		// Skip header
@@ -177,19 +177,19 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 				log.Printf("Warning: invalid run number in %s at line %d: %v", file, i+1, err)
 				continue
 			}
-			
+
 			cycles, err := strconv.ParseInt(record[1], 10, 64)
 			if err != nil {
 				log.Printf("Warning: invalid cycles in %s at line %d: %v", file, i+1, err)
 				continue
 			}
-			
+
 			cpuClockHz, err := strconv.ParseInt(record[2], 10, 64)
 			if err != nil {
 				log.Printf("Warning: invalid CPU clock Hz in %s at line %d: %v", file, i+1, err)
 				continue
 			}
-			
+
 			fileSizeBytes, err := strconv.Atoi(record[5])
 			if err != nil {
 				log.Printf("Warning: invalid file size bytes in %s at line %d: %v", file, i+1, err)
@@ -258,22 +258,22 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 			log.Printf("Warning: invalid filename format: %s", file)
 			continue
 		}
-		
+
 		algorithm := parts[0]
-		runName := parts[1] // e.g., "i9"
+		runName := parts[1]                      // e.g., "i9"
 		fileInfo := strings.Join(parts[2:], "_") // e.g., "01_100.bin"
-		
+
 		// Extract file size from the file info (e.g., "01_100.bin" -> 100, "06_100K.bin" -> 100000)
 		fileSizeParts := strings.Split(fileInfo, "_")
 		if len(fileSizeParts) < 2 {
 			log.Printf("Warning: invalid file info format: %s", fileInfo)
 			continue
 		}
-		
+
 		fileSizeStr := fileSizeParts[len(fileSizeParts)-1] // Get the last part
 		// Remove .bin extension
 		fileSizeStr = strings.TrimSuffix(fileSizeStr, ".bin")
-		
+
 		// Handle suffixes like K (thousands), M (millions)
 		var multiplier int = 1
 		if strings.HasSuffix(fileSizeStr, "K") {
@@ -283,13 +283,13 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 			multiplier = 1000000
 			fileSizeStr = strings.TrimSuffix(fileSizeStr, "M")
 		}
-		
+
 		fileSizeNum, err := strconv.Atoi(fileSizeStr)
 		if err != nil {
 			log.Printf("Warning: invalid file size in filename %s: %v", file, err)
 			continue
 		}
-		
+
 		fileSizeBytes := fileSizeNum * multiplier
 
 		// If file has no data (only header), create zero stats
@@ -301,7 +301,7 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 				FileSizeBytes:      fileSizeBytes,
 				TotalAllocated:     0,
 				TotalFreed:         0,
-				AverageMemoryUsage:  0,
+				AverageMemoryUsage: 0,
 				AllocationCount:    0,
 				FreeCount:          0,
 			})
@@ -318,7 +318,7 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 
 			alignment := record[0]
 			allocationType := record[1]
-			
+
 			allocationSizeBytes, err := strconv.ParseInt(record[2], 10, 64)
 			if err != nil {
 				log.Printf("Warning: invalid allocation size bytes in %s at line %d: %v", file, i+1, err)
@@ -458,7 +458,7 @@ func calculateMemoryStats(data []MemoryData, algorithm, runName, file string) Me
 
 func writeCPUSheet(f *excelize.File, stats []CPUStats) error {
 	// Create CPU sheet
-	sheetName := "CPU Statistics"
+	sheetName := "CPU_Statistics"
 	_, err := f.NewSheet(sheetName)
 	if err != nil {
 		return fmt.Errorf("error creating CPU sheet: %w", err)
@@ -523,7 +523,7 @@ func writeCPUSheet(f *excelize.File, stats []CPUStats) error {
 
 func writeMemorySheet(f *excelize.File, stats []MemoryStats) error {
 	// Create Memory sheet
-	sheetName := "Memory Statistics"
+	sheetName := "Memory_Statistics"
 	_, err := f.NewSheet(sheetName)
 	if err != nil {
 		return fmt.Errorf("error creating memory sheet: %w", err)
@@ -592,7 +592,7 @@ func createCPUCharts(f *excelize.File, sheetName string, stats []CPUStats) error
 	}
 
 	// Create a chart sheet for CPU performance comparison
-	chartSheetName := "CPU Charts"
+	chartSheetName := "CPU_Charts"
 	_, err := f.NewSheet(chartSheetName)
 	if err != nil {
 		return fmt.Errorf("error creating CPU chart sheet: %w", err)
@@ -611,8 +611,8 @@ func createCPUCharts(f *excelize.File, sheetName string, stats []CPUStats) error
 		Series: []excelize.ChartSeries{
 			{
 				Name:       "Average Cycles",
-				Categories: "CPU Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
-				Values:     "CPU Statistics!$E$2:$E$" + fmt.Sprintf("%d", len(stats)+1),
+				Categories: "CPU_Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
+				Values:     "CPU_Statistics!$E$2:$E$" + fmt.Sprintf("%d", len(stats)+1),
 			},
 		},
 		Title: excelize.ChartTitle{
@@ -639,7 +639,7 @@ func createMemoryCharts(f *excelize.File, sheetName string, stats []MemoryStats)
 	}
 
 	// Create a chart sheet for memory analysis
-	chartSheetName := "Memory Charts"
+	chartSheetName := "Memory_Charts"
 	_, err := f.NewSheet(chartSheetName)
 	if err != nil {
 		return fmt.Errorf("error creating memory chart sheet: %w", err)
@@ -652,13 +652,13 @@ func createMemoryCharts(f *excelize.File, sheetName string, stats []MemoryStats)
 		Series: []excelize.ChartSeries{
 			{
 				Name:       "Total Allocated",
-				Categories: "Memory Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
-				Values:     "Memory Statistics!$E$2:$E$" + fmt.Sprintf("%d", len(stats)+1),
+				Categories: "Memory_Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
+				Values:     "Memory_Statistics!$E$2:$E$" + fmt.Sprintf("%d", len(stats)+1),
 			},
 			{
 				Name:       "Total Freed",
-				Categories: "Memory Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
-				Values:     "Memory Statistics!$F$2:$F$" + fmt.Sprintf("%d", len(stats)+1),
+				Categories: "Memory_Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
+				Values:     "Memory_Statistics!$F$2:$F$" + fmt.Sprintf("%d", len(stats)+1),
 			},
 		},
 		Title: excelize.ChartTitle{
@@ -677,8 +677,8 @@ func createMemoryCharts(f *excelize.File, sheetName string, stats []MemoryStats)
 		Series: []excelize.ChartSeries{
 			{
 				Name:       "Average Memory Usage",
-				Categories: "Memory Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
-				Values:     "Memory Statistics!$G$2:$G$" + fmt.Sprintf("%d", len(stats)+1),
+				Categories: "Memory_Statistics!$D$2:$D$" + fmt.Sprintf("%d", len(stats)+1),
+				Values:     "Memory_Statistics!$G$2:$G$" + fmt.Sprintf("%d", len(stats)+1),
 			},
 		},
 		Title: excelize.ChartTitle{
@@ -697,7 +697,7 @@ func createMemoryCharts(f *excelize.File, sheetName string, stats []MemoryStats)
 func createAlgorithmComparisonChart(f *excelize.File, sheetName string, algorithmData map[string][]CPUStats, position string) error {
 	// Create a chart comparing algorithms
 	chart := &excelize.Chart{
-		Type: excelize.Col,
+		Type:   excelize.Col,
 		Series: []excelize.ChartSeries{},
 		Title: excelize.ChartTitle{
 			Name: "Algorithm Performance Comparison",
@@ -742,6 +742,6 @@ func readCSV(filename string) ([][]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading CSV from %s: %w", filename, err)
 	}
-	
+
 	return records, nil
 }
