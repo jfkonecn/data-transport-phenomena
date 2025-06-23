@@ -1,0 +1,11 @@
+run_number,cycles,cpu_clock_hz,algorithm,file,file_size_bytes
+1,643419,11927043,bubble-sort,01_100.bin,100
+2,629809,11927043,bubble-sort,01_100.bin,100
+3,657659,11927043,bubble-sort,01_100.bin,100
+4,630127,11927043,bubble-sort,01_100.bin,100
+5,639451,11927043,bubble-sort,01_100.bin,100
+6,639211,11927043,bubble-sort,01_100.bin,100
+7,643746,11927043,bubble-sort,01_100.bin,100
+8,650129,11927043,bubble-sort,01_100.bin,100
+9,870011,11927043,bubble-sort,01_100.bin,100
+10,656586,11927043,bubble-sort,01_100.bin,100
