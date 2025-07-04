@@ -167,7 +167,7 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 		// Skip header
 		for i := 1; i < len(records); i++ {
 			record := records[i]
-			if len(record) < 6 {
+			if len(record) < 5 {
 				log.Printf("Warning: skipping malformed record in %s at line %d", file, i+1)
 				continue
 			}
