@@ -1,6 +1,9 @@
 const std = @import("std");
 const sort = @import("sort.zig");
 const LogAllocator = @import("LogAllocator.zig").LogAllocator;
+const c = @cImport({
+    @cInclude("time.h");
+});
 
 extern fn readCpuTimer() callconv(.C) u64;
 const stdout = std.io.getStdOut().writer();
@@ -26,18 +29,30 @@ fn getOutDirArg(args: []const [:0]u8) []const u8 {
     return ".";
 }
 
-fn print_clock_speed() !u64 {
-    const sleep_time = 1_000_000_000; // 1 second in nanoseconds
+const TimeSpec = extern struct {
+    tv_sec: i64,
+    tv_nsec: i64,
+};
 
+fn get_time() u64 {
+    var now: c.struct_timespec = undefined;
+    _ = c.clock_gettime(c.CLOCK_MONOTONIC, &now);
+    const time = @as(u64, @intCast(now.tv_sec)) * 1_000_000_000 + @as(u64, @intCast(now.tv_nsec));
+    return time / 1000;
+}
+
+fn print_clock_speed() !u64 {
+    const start_time = get_time();
     const start_cycles = readCpuTimer();
-    std.time.sleep(sleep_time); // sleep 1 second
+    std.time.sleep(1_000_000_000); // sleep 1 second
     const end_cycles = readCpuTimer();
+    const end_time = get_time();
 
     const delta_cycles = end_cycles - start_cycles;
 
     try stdout.print("Estimated CPU clock speed: {} Hz ({} MHz)\n", .{
         delta_cycles,
-        delta_cycles / 1_000_000,
+        delta_cycles / (end_time - start_time),
     });
     return delta_cycles;
 }
