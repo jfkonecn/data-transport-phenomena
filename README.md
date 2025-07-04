@@ -16,13 +16,6 @@ This project contains benchmarking data for sorting algorithms with CPU and memo
 
 Zig is required for building and running the benchmarks. Please visit the [official Zig website](https://ziglang.org/download/) for installation instructions for your platform.
 
-For ARM devices, you can also use the project's ARM setup:
-
-```bash
-cd arm-setup
-./install.sh
-```
-
 ### Installing Go
 
 - Go 1.21 or later

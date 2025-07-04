@@ -5,7 +5,6 @@ const c = @cImport({
     @cInclude("time.h");
 });
 
-extern fn readCpuTimer() callconv(.C) u64;
 const stdout = std.io.getStdOut().writer();
 const stderr = std.io.getStdErr().writer();
 
@@ -34,34 +33,12 @@ const TimeSpec = extern struct {
     tv_nsec: i64,
 };
 
+// get time in nano seconds
 fn get_time() u64 {
     var now: c.struct_timespec = undefined;
     _ = c.clock_gettime(c.CLOCK_MONOTONIC, &now);
     const time = @as(u64, @intCast(now.tv_sec)) * 1_000_000_000 + @as(u64, @intCast(now.tv_nsec));
     return time;
-}
-
-fn print_clock_speed() !u64 {
-    const start_time = get_time();
-    const start_cycles = readCpuTimer();
-    std.time.sleep(1_000_000_000); // sleep 1 second
-    const end_cycles = readCpuTimer();
-    const end_time = get_time();
-
-    const delta_cycles = end_cycles - start_cycles;
-    const time_s = (end_time - start_time) / 1_000_000_000;
-    const time_ms = (end_time - start_time) / 1_000_000;
-
-    const cpu_speed_hz = delta_cycles / time_s;
-    const cpu_speed_mhz = cpu_speed_hz / 1_000_000;
-
-    try stdout.print("Estimated CPU clock speed: {} Hz ({} MHz) in {}ms\n", .{
-        cpu_speed_hz,
-        cpu_speed_mhz,
-        // test
-        time_ms,
-    });
-    return delta_cycles;
 }
 
 pub fn main() !void {
@@ -129,12 +106,10 @@ pub fn main() !void {
 
     try stdout.print("Running {s} Test...\n", .{algorithm_name});
     var allocator_to_use = allocator;
-    var cpu_clock_hz: u64 = 0;
 
     switch (test_type) {
         .cpu => {
-            cpu_clock_hz = try print_clock_speed();
-            try log_writer.print("run_number,cycles,cpu_clock_hz,algorithm,file,file_size_bytes", .{});
+            try log_writer.print("run_number,run_time_ns,algorithm,file,file_size_bytes", .{});
         },
         .memory => {
             const LogAlloc = LogAllocator(@TypeOf(log_writer));
@@ -150,7 +125,7 @@ pub fn main() !void {
 
         try stdout.print("Run {d}\n", .{run_index + 1});
 
-        const start = readCpuTimer();
+        const start = get_time();
 
         if (std.mem.eql(u8, algorithm_name, "quick-sort")) {
             sort.quickSort(data);
@@ -163,10 +138,10 @@ pub fn main() !void {
             std.process.exit(1);
         }
 
-        const cycles = readCpuTimer() - start;
+        const time_ns = get_time() - start;
 
         if (test_type == .cpu) {
-            try log_writer.print("\n{d},{d},{d},{s},{s},{d}", .{ run_index + 1, cycles, cpu_clock_hz, algorithm_name, data_file_name, file_size });
+            try log_writer.print("\n{d},{d},{s},{s},{d}", .{ run_index + 1, time_ns, algorithm_name, data_file_name, file_size });
         }
     }
 }

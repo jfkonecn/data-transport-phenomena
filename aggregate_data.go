@@ -17,8 +17,7 @@ import (
 // CPUData represents a single CPU measurement
 type CPUData struct {
 	RunNumber     int
-	Cycles        int64
-	CPUClockHz    int64
+	TimeNs        int64
 	Algorithm     string
 	File          string
 	FileSizeBytes int
@@ -179,19 +178,13 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 				continue
 			}
 
-			cycles, err := strconv.ParseInt(record[1], 10, 64)
+			time, err := strconv.ParseInt(record[1], 10, 64)
 			if err != nil {
-				log.Printf("Warning: invalid cycles in %s at line %d: %v", file, i+1, err)
+				log.Printf("Warning: invalid time in %s at line %d: %v", file, i+1, err)
 				continue
 			}
 
-			cpuClockHz, err := strconv.ParseInt(record[2], 10, 64)
-			if err != nil {
-				log.Printf("Warning: invalid CPU clock Hz in %s at line %d: %v", file, i+1, err)
-				continue
-			}
-
-			fileSizeBytes, err := strconv.Atoi(record[5])
+			fileSizeBytes, err := strconv.Atoi(record[4])
 			if err != nil {
 				log.Printf("Warning: invalid file size bytes in %s at line %d: %v", file, i+1, err)
 				continue
@@ -200,8 +193,7 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 			key := fmt.Sprintf("%s_%s_%s", algorithm, runName, fileInfo)
 			algorithmFileMap[key] = append(algorithmFileMap[key], CPUData{
 				RunNumber:     runNumber,
-				Cycles:        cycles,
-				CPUClockHz:    cpuClockHz,
+				TimeNs:        time,
 				Algorithm:     algorithm,
 				File:          fileInfo,
 				FileSizeBytes: fileSizeBytes,
@@ -334,17 +326,17 @@ func calculateCPUStats(data []CPUData, algorithm, runName, file string) CPUStats
 	}
 
 	var sum int64
-	var min = data[0].Cycles
-	var max = data[0].Cycles
+	var min = data[0].TimeNs
+	var max = data[0].TimeNs
 	fileSizeBytes := data[0].FileSizeBytes
 
 	for _, d := range data {
-		sum += d.Cycles
-		if d.Cycles < min {
-			min = d.Cycles
+		sum += d.TimeNs
+		if d.TimeNs < min {
+			min = d.TimeNs
 		}
-		if d.Cycles > max {
-			max = d.Cycles
+		if d.TimeNs > max {
+			max = d.TimeNs
 		}
 	}
 
@@ -353,7 +345,7 @@ func calculateCPUStats(data []CPUData, algorithm, runName, file string) CPUStats
 	// Calculate standard deviation
 	var varianceSum float64
 	for _, d := range data {
-		diff := float64(d.Cycles) - average
+		diff := float64(d.TimeNs) - average
 		varianceSum += diff * diff
 	}
 	stdDev := math.Sqrt(varianceSum / float64(len(data)))
@@ -438,7 +430,7 @@ func writeCPUSheet(f *excelize.File, stats []CPUStats) error {
 	}
 
 	// Write headers
-	headers := []string{"Algorithm", "Run Name", "File", "File Size (bytes)", "Average Cycles", "Std Dev", "Min Cycles", "Max Cycles", "Sample Count"}
+	headers := []string{"Algorithm", "Run Name", "File", "File Size (bytes)", "Average Time (ns)", "Std Dev", "Min Time (ns)", "Max Time (ns)", "Sample Count"}
 	for i, header := range headers {
 		cell := fmt.Sprintf("%c1", 'A'+i)
 		if err := f.SetCellValue(sheetName, cell, header); err != nil {
@@ -638,18 +630,18 @@ func createCPUCharts(f *excelize.File, sheetName string, stats []CPUStats) error
 			for i, algorithm := range algorithms {
 				cell := fmt.Sprintf("%c%d", 'B'+i, currentRow)
 				// Find the stats for this algorithm and file size
-				var avgCycles float64
+				var avgTime float64
 				found := false
 				for _, stat := range algorithmData[algorithm] {
 					if stat.FileSizeBytes == fileSize {
-						avgCycles = stat.Average
+						avgTime = stat.Average
 						found = true
 						break
 					}
 				}
 				if found {
-					if err := f.SetCellValue(chartSheetName, cell, avgCycles); err != nil {
-						return fmt.Errorf("error setting average cycles: %w", err)
+					if err := f.SetCellValue(chartSheetName, cell, avgTime); err != nil {
+						return fmt.Errorf("error setting average time: %w", err)
 					}
 				} else {
 					if err := f.SetCellValue(chartSheetName, cell, ""); err != nil {
