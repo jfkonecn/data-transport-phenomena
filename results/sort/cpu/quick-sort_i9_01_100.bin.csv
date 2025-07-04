@@ -1,0 +1,11 @@
+run_number,run_time_ns,algorithm,file,file_size_bytes
+1,7049,quick-sort,01_100.bin,100
+2,5493,quick-sort,01_100.bin,100
+3,4318,quick-sort,01_100.bin,100
+4,4079,quick-sort,01_100.bin,100
+5,4160,quick-sort,01_100.bin,100
+6,4124,quick-sort,01_100.bin,100
+7,4010,quick-sort,01_100.bin,100
+8,4001,quick-sort,01_100.bin,100
+9,4026,quick-sort,01_100.bin,100
+10,4087,quick-sort,01_100.bin,100
