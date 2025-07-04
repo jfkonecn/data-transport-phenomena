@@ -38,7 +38,7 @@ fn get_time() u64 {
     var now: c.struct_timespec = undefined;
     _ = c.clock_gettime(c.CLOCK_MONOTONIC, &now);
     const time = @as(u64, @intCast(now.tv_sec)) * 1_000_000_000 + @as(u64, @intCast(now.tv_nsec));
-    return time / 1000;
+    return time;
 }
 
 fn print_clock_speed() !u64 {
@@ -49,10 +49,17 @@ fn print_clock_speed() !u64 {
     const end_time = get_time();
 
     const delta_cycles = end_cycles - start_cycles;
+    const time_s = (end_time - start_time) / 1_000_000_000;
+    const time_ms = (end_time - start_time) / 1_000_000;
 
-    try stdout.print("Estimated CPU clock speed: {} Hz ({} MHz)\n", .{
-        delta_cycles,
-        delta_cycles / (end_time - start_time),
+    const cpu_speed_hz = delta_cycles / time_s;
+    const cpu_speed_mhz = cpu_speed_hz / 1_000_000;
+
+    try stdout.print("Estimated CPU clock speed: {} Hz ({} MHz) in {}ms\n", .{
+        cpu_speed_hz,
+        cpu_speed_mhz,
+        // test
+        time_ms,
     });
     return delta_cycles;
 }
