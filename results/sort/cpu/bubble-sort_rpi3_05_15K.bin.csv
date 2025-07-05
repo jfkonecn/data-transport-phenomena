@@ -1,0 +1,11 @@
+run_number,run_time_ns,algorithm,file,file_size_bytes
+1,12685254483,bubble-sort,05_15K.bin,15360
+2,12684317400,bubble-sort,05_15K.bin,15360
+3,12683840056,bubble-sort,05_15K.bin,15360
+4,12685513412,bubble-sort,05_15K.bin,15360
+5,12684036201,bubble-sort,05_15K.bin,15360
+6,12684777286,bubble-sort,05_15K.bin,15360
+7,12685257874,bubble-sort,05_15K.bin,15360
+8,12685484204,bubble-sort,05_15K.bin,15360
+9,12685436333,bubble-sort,05_15K.bin,15360
+10,12683145101,bubble-sort,05_15K.bin,15360
