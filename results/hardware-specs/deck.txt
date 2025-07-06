@@ -1,0 +1,145 @@
+=== PRE-RUN CPU FREQUENCY (KHz) ===
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq:400000
+/sys/devices/system/cpu/cpu1/cpufreq/scaling_cur_freq:2424946
+/sys/devices/system/cpu/cpu2/cpufreq/scaling_cur_freq:400000
+/sys/devices/system/cpu/cpu3/cpufreq/scaling_cur_freq:1385130
+/sys/devices/system/cpu/cpu4/cpufreq/scaling_cur_freq:400000
+/sys/devices/system/cpu/cpu5/cpufreq/scaling_cur_freq:1901235
+/sys/devices/system/cpu/cpu6/cpufreq/scaling_cur_freq:2423604
+/sys/devices/system/cpu/cpu7/cpufreq/scaling_cur_freq:400000
+
+=== CPU INFORMATION ===
+Architecture:                         x86_64
+CPU op-mode(s):                       32-bit, 64-bit
+Address sizes:                        44 bits physical, 48 bits virtual
+Byte Order:                           Little Endian
+CPU(s):                               8
+On-line CPU(s) list:                  0-7
+Vendor ID:                            AuthenticAMD
+Model name:                           AMD Custom APU 0932
+CPU family:                           23
+Model:                                145
+Thread(s) per core:                   2
+Core(s) per socket:                   4
+Socket(s):                            1
+Stepping:                             0
+Frequency boost:                      enabled
+CPU(s) scaling MHz:                   29%
+CPU max MHz:                          3501.0000
+CPU min MHz:                          400.0000
+BogoMIPS:                             5599.94
+Flags:                                fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd cppc arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip rdpid overflow_recov succor smca sev sev_es
+Virtualization:                       AMD-V
+L1d cache:                            128 KiB (4 instances)
+L1i cache:                            128 KiB (4 instances)
+L2 cache:                             2 MiB (4 instances)
+L3 cache:                             4 MiB (1 instance)
+NUMA node(s):                         1
+NUMA node0 CPU(s):                    0-7
+Vulnerability Gather data sampling:   Not affected
+Vulnerability Itlb multihit:          Not affected
+Vulnerability L1tf:                   Not affected
+Vulnerability Mds:                    Not affected
+Vulnerability Meltdown:               Not affected
+Vulnerability Mmio stale data:        Not affected
+Vulnerability Reg file data sampling: Not affected
+Vulnerability Retbleed:               Mitigation; untrained return thunk; SMT enabled with STIBP protection
+Vulnerability Spec rstack overflow:   Mitigation; Safe RET
+Vulnerability Spec store bypass:      Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:             Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:             Mitigation; Retpolines; IBPB conditional; STIBP always-on; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected
+Vulnerability Srbds:                  Not affected
+Vulnerability Tsx async abort:        Not affected
+
+=== MEMORY INFORMATION ===
+  *-firmware
+       description: BIOS
+       vendor: Valve
+       physical id: 0
+       version: F7G0112
+       date: 08/01/2024
+       size: 128KiB
+       capacity: 16MiB
+       capabilities: pci upgrade shadowing cdboot bootselect edd int13floppynec int13floppytoshiba int13floppy360 int13floppy1200 int13floppy720 int13floppy2880 int9keyboard int10video acpi usb biosbootspecification uefi
+  *-cache:0
+       description: L1 cache
+       physical id: 5
+       slot: L1 - Cache
+       size: 256KiB
+       capacity: 256KiB
+       clock: 1GHz (1.0ns)
+       capabilities: pipeline-burst internal write-back unified
+       configuration: level=1
+  *-cache:1
+       description: L2 cache
+       physical id: 6
+       slot: L2 - Cache
+       size: 2MiB
+       capacity: 2MiB
+       clock: 1GHz (1.0ns)
+       capabilities: pipeline-burst internal write-back unified
+       configuration: level=2
+  *-cache:2
+       description: L3 cache
+       physical id: 7
+       slot: L3 - Cache
+       size: 4MiB
+       capacity: 4MiB
+       clock: 1GHz (1.0ns)
+       capabilities: pipeline-burst internal write-back unified
+       configuration: level=3
+  *-memory
+       description: System Memory
+       physical id: 1f
+       slot: System board or motherboard
+       size: 16GiB
+     *-bank:0
+          description: Synchronous Unbuffered (Unregistered) 4266 MHz (0.2 ns)
+          product: MT62F1G64D4AH-023 WT
+          vendor: Unknown
+          physical id: 0
+          serial: [REMOVED]
+          slot: DIMM 0
+          size: 4GiB
+          width: 32 bits
+          clock: 4266MHz (0.2ns)
+     *-bank:1
+          description: Synchronous Unbuffered (Unregistered) 4266 MHz (0.2 ns)
+          product: MT62F1G64D4AH-023 WT
+          vendor: Unknown
+          physical id: 1
+          serial: [REMOVED]
+          slot: DIMM 0
+          size: 4GiB
+          width: 32 bits
+          clock: 4266MHz (0.2ns)
+     *-bank:2
+          description: Synchronous Unbuffered (Unregistered) 4266 MHz (0.2 ns)
+          product: MT62F1G64D4AH-023 WT
+          vendor: Unknown
+          physical id: 2
+          serial: [REMOVED]
+          slot: DIMM 0
+          size: 4GiB
+          width: 32 bits
+          clock: 4266MHz (0.2ns)
+     *-bank:3
+          description: Synchronous Unbuffered (Unregistered) 4266 MHz (0.2 ns)
+          product: MT62F1G64D4AH-023 WT
+          vendor: Unknown
+          physical id: 3
+          serial: [REMOVED]
+          slot: DIMM 0
+          size: 4GiB
+          width: 32 bits
+          clock: 4266MHz (0.2ns)
+
+=== POST-RUN CPU FREQUENCY (KHz) ===
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq:3497707
+/sys/devices/system/cpu/cpu1/cpufreq/scaling_cur_freq:400000
+/sys/devices/system/cpu/cpu2/cpufreq/scaling_cur_freq:1555540
+/sys/devices/system/cpu/cpu3/cpufreq/scaling_cur_freq:400000
+/sys/devices/system/cpu/cpu4/cpufreq/scaling_cur_freq:1554979
+/sys/devices/system/cpu/cpu5/cpufreq/scaling_cur_freq:3477212
+/sys/devices/system/cpu/cpu6/cpufreq/scaling_cur_freq:3222800
+/sys/devices/system/cpu/cpu7/cpufreq/scaling_cur_freq:1714679
