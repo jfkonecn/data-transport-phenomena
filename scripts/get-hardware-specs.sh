@@ -18,8 +18,8 @@ mkdir -p "./results/hardware-specs"
 
 # Redirect all output to the file
 {
-    echo -e "=== PRE-RUN CPU FREQUENCY ==="
-    cat /proc/cpuinfo | grep MHz
+    echo -e "=== PRE-RUN CPU FREQUENCY (KHz) ==="
+    grep . /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq | sort -t/ -k6.4n
 
     echo -e "\n=== CPU INFORMATION ==="
     lscpu
@@ -29,8 +29,8 @@ mkdir -p "./results/hardware-specs"
 
     taskset -c 0 zig build run -- bubble-sort ./data/sort/12_50K.bin cpu test --out-dir /dev/null > /dev/null 2>&1
 
-    echo -e "\n=== POST-RUN CPU FREQUENCY ==="
-    cat /proc/cpuinfo | grep MHz
+    echo -e "\n=== POST-RUN CPU FREQUENCY (KHz) ==="
+    grep . /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq | sort -t/ -k6.4n
 } > "./results/hardware-specs/$RUN_NAME.txt" 2>&1
 
 echo "Hardware specifications saved to ./results/hardware-specs/$RUN_NAME.txt"

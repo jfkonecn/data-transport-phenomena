@@ -1,36 +1,36 @@
-=== PRE-RUN CPU FREQUENCY ===
-cpu MHz		: 967.177
-cpu MHz		: 800.000
-cpu MHz		: 1357.822
-cpu MHz		: 800.000
-cpu MHz		: 1050.077
-cpu MHz		: 1032.989
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 801.064
-cpu MHz		: 800.000
-cpu MHz		: 1400.000
-cpu MHz		: 800.000
-cpu MHz		: 1251.385
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 889.174
-cpu MHz		: 800.000
-cpu MHz		: 799.997
-cpu MHz		: 800.000
-cpu MHz		: 799.784
-cpu MHz		: 799.760
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 976.275
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 961.481
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 874.437
+=== PRE-RUN CPU FREQUENCY (KHz) ===
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq:1100000
+/sys/devices/system/cpu/cpu1/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu2/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu3/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu4/cpufreq/scaling_cur_freq:1098081
+/sys/devices/system/cpu/cpu5/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu6/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu7/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu8/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu9/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu10/cpufreq/scaling_cur_freq:800288
+/sys/devices/system/cpu/cpu11/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu12/cpufreq/scaling_cur_freq:799698
+/sys/devices/system/cpu/cpu13/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu14/cpufreq/scaling_cur_freq:1946044
+/sys/devices/system/cpu/cpu15/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu16/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu17/cpufreq/scaling_cur_freq:799385
+/sys/devices/system/cpu/cpu18/cpufreq/scaling_cur_freq:799792
+/sys/devices/system/cpu/cpu19/cpufreq/scaling_cur_freq:800226
+/sys/devices/system/cpu/cpu20/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu21/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu22/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu23/cpufreq/scaling_cur_freq:799918
+/sys/devices/system/cpu/cpu24/cpufreq/scaling_cur_freq:801977
+/sys/devices/system/cpu/cpu25/cpufreq/scaling_cur_freq:799935
+/sys/devices/system/cpu/cpu26/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu27/cpufreq/scaling_cur_freq:800967
+/sys/devices/system/cpu/cpu28/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu29/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu30/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu31/cpufreq/scaling_cur_freq:799989
 
 === CPU INFORMATION ===
 Architecture:                         x86_64
@@ -47,7 +47,7 @@ Thread(s) per core:                   2
 Core(s) per socket:                   24
 Socket(s):                            1
 Stepping:                             1
-CPU(s) scaling MHz:                   18%
+CPU(s) scaling MHz:                   17%
 CPU max MHz:                          5800.0000
 CPU min MHz:                          800.0000
 BogoMIPS:                             5990.40
@@ -194,36 +194,36 @@ Vulnerability Tsx async abort:        Not affected
        configuration: latency=0
        resources: iomemory:440-43f iomemory:440-43f memory:4402114000-4402117fff memory:440211b000-440211bfff
 
-=== POST-RUN CPU FREQUENCY ===
-cpu MHz		: 5500.000
-cpu MHz		: 5500.000
-cpu MHz		: 1635.339
-cpu MHz		: 800.000
-cpu MHz		: 4545.679
-cpu MHz		: 800.000
-cpu MHz		: 5499.839
-cpu MHz		: 800.000
-cpu MHz		: 5499.791
-cpu MHz		: 800.000
-cpu MHz		: 5500.000
-cpu MHz		: 800.000
-cpu MHz		: 5365.127
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 2203.613
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 2928.463
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 1448.832
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 800.000
-cpu MHz		: 3429.345
-cpu MHz		: 3086.651
+=== POST-RUN CPU FREQUENCY (KHz) ===
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq:5500000
+/sys/devices/system/cpu/cpu1/cpufreq/scaling_cur_freq:5500000
+/sys/devices/system/cpu/cpu2/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu3/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu4/cpufreq/scaling_cur_freq:788714
+/sys/devices/system/cpu/cpu5/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu6/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu7/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu8/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu9/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu10/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu11/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu12/cpufreq/scaling_cur_freq:5327480
+/sys/devices/system/cpu/cpu13/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu14/cpufreq/scaling_cur_freq:801271
+/sys/devices/system/cpu/cpu15/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu16/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu17/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu18/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu19/cpufreq/scaling_cur_freq:4292230
+/sys/devices/system/cpu/cpu20/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu21/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu22/cpufreq/scaling_cur_freq:3451140
+/sys/devices/system/cpu/cpu23/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu24/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu25/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu26/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu27/cpufreq/scaling_cur_freq:3174708
+/sys/devices/system/cpu/cpu28/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu29/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu30/cpufreq/scaling_cur_freq:800000
+/sys/devices/system/cpu/cpu31/cpufreq/scaling_cur_freq:800000
