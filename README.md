@@ -23,11 +23,25 @@ Zig is required for building and running the benchmarks. Please visit the [offic
 
 Install Go from [golang.org](https://golang.org/dl/) or use your system's package manager.
 
+### Installing lshw
+
+[lshw website](https://ezix.org/project/wiki/HardwareLiSter)
+
+You can use apt too.
+
 ## Building and Running
 
 ### Running the Benchmarks
 
-1. **Run the sorting benchmarks**:
+1. **Run the hardware information script**
+
+   ```bash
+   ./script/get-hardware-specs.sh <run-name>
+   ```
+
+   Replace `<run-name>` with a name for your test run (e.g., "i9", "my-run", "performance-run"). This name will appear in the output CSV files and Excel reports.
+
+2. **Run the sorting benchmarks**:
 
    ```bash
    ./scripts/sort-benchmark.sh <run-name>

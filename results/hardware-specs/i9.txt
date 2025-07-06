@@ -1,0 +1,229 @@
+=== PRE-RUN CPU FREQUENCY ===
+cpu MHz		: 967.177
+cpu MHz		: 800.000
+cpu MHz		: 1357.822
+cpu MHz		: 800.000
+cpu MHz		: 1050.077
+cpu MHz		: 1032.989
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 801.064
+cpu MHz		: 800.000
+cpu MHz		: 1400.000
+cpu MHz		: 800.000
+cpu MHz		: 1251.385
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 889.174
+cpu MHz		: 800.000
+cpu MHz		: 799.997
+cpu MHz		: 800.000
+cpu MHz		: 799.784
+cpu MHz		: 799.760
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 976.275
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 961.481
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 874.437
+
+=== CPU INFORMATION ===
+Architecture:                         x86_64
+CPU op-mode(s):                       32-bit, 64-bit
+Address sizes:                        46 bits physical, 48 bits virtual
+Byte Order:                           Little Endian
+CPU(s):                               32
+On-line CPU(s) list:                  0-31
+Vendor ID:                            GenuineIntel
+Model name:                           13th Gen Intel(R) Core(TM) i9-13900K
+CPU family:                           6
+Model:                                183
+Thread(s) per core:                   2
+Core(s) per socket:                   24
+Socket(s):                            1
+Stepping:                             1
+CPU(s) scaling MHz:                   18%
+CPU max MHz:                          5800.0000
+CPU min MHz:                          800.0000
+BogoMIPS:                             5990.40
+Flags:                                fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb intel_pt sha_ni xsaveopt xsavec xgetbv1 xsaves split_lock_detect user_shstk avx_vnni dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp hwp_pkg_req hfi vnmi umip pku ospke waitpkg gfni vaes vpclmulqdq tme rdpid movdiri movdir64b fsrm md_clear serialize pconfig arch_lbr ibt flush_l1d arch_capabilities
+Virtualization:                       VT-x
+L1d cache:                            896 KiB (24 instances)
+L1i cache:                            1.3 MiB (24 instances)
+L2 cache:                             32 MiB (12 instances)
+L3 cache:                             36 MiB (1 instance)
+NUMA node(s):                         1
+NUMA node0 CPU(s):                    0-31
+Vulnerability Gather data sampling:   Not affected
+Vulnerability Itlb multihit:          Not affected
+Vulnerability L1tf:                   Not affected
+Vulnerability Mds:                    Not affected
+Vulnerability Meltdown:               Not affected
+Vulnerability Mmio stale data:        Not affected
+Vulnerability Reg file data sampling: Mitigation; Clear Register File
+Vulnerability Retbleed:               Not affected
+Vulnerability Spec rstack overflow:   Not affected
+Vulnerability Spec store bypass:      Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:             Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:             Mitigation; Enhanced / Automatic IBRS; IBPB conditional; RSB filling; PBRSB-eIBRS SW sequence; BHI BHI_DIS_S
+Vulnerability Srbds:                  Not affected
+Vulnerability Tsx async abort:        Not affected
+
+=== MEMORY INFORMATION ===
+  *-firmware
+       description: BIOS
+       vendor: American Megatrends International, LLC.
+       physical id: 0
+       version: 14.01
+       date: 08/07/2024
+       size: 64KiB
+       capacity: 16MiB
+       capabilities: pci upgrade shadowing cdboot bootselect socketedrom edd int13floppynec int13floppytoshiba int13floppy360 int13floppy1200 int13floppy720 int13floppy2880 int5printscreen int9keyboard int14serial int17printer int10video acpi usb biosbootspecification uefi
+  *-memory
+       description: System Memory
+       physical id: 10
+       slot: System board or motherboard
+       size: 32GiB
+     *-bank:0
+          description: DIMM [empty]
+          physical id: 0
+          slot: Controller0-ChannelA-DIMM0
+     *-bank:1
+          description: DIMM Synchronous 4800 MHz (0.2 ns)
+          product: CMK32GX5M2D6000C36
+          vendor: Corsair
+          physical id: 1
+          serial: [REMOVED]
+          slot: Controller0-ChannelA-DIMM1
+          size: 16GiB
+          width: 64 bits
+          clock: 505MHz (2.0ns)
+     *-bank:2
+          description: DIMM [empty]
+          physical id: 2
+          slot: Controller1-ChannelA-DIMM0
+     *-bank:3
+          description: DIMM Synchronous 4800 MHz (0.2 ns)
+          product: CMK32GX5M2D6000C36
+          vendor: Corsair
+          physical id: 3
+          serial: [REMOVED]
+          slot: Controller1-ChannelA-DIMM1
+          size: 16GiB
+          width: 64 bits
+          clock: 505MHz (2.0ns)
+  *-cache:0
+       description: L1 cache
+       physical id: 20
+       slot: L1 Cache
+       size: 384KiB
+       capacity: 384KiB
+       capabilities: synchronous internal write-back data
+       configuration: level=1
+  *-cache:1
+       description: L1 cache
+       physical id: 21
+       slot: L1 Cache
+       size: 256KiB
+       capacity: 256KiB
+       capabilities: synchronous internal write-back instruction
+       configuration: level=1
+  *-cache:2
+       description: L2 cache
+       physical id: 22
+       slot: L2 Cache
+       size: 16MiB
+       capacity: 16MiB
+       capabilities: synchronous internal write-back unified
+       configuration: level=2
+  *-cache:3
+       description: L3 cache
+       physical id: 23
+       slot: L3 Cache
+       size: 36MiB
+       capacity: 36MiB
+       capabilities: synchronous internal write-back unified
+       configuration: level=3
+  *-cache:4
+       description: L1 cache
+       physical id: 24
+       slot: L1 Cache
+       size: 512KiB
+       capacity: 512KiB
+       capabilities: synchronous internal write-back data
+       configuration: level=1
+  *-cache:5
+       description: L1 cache
+       physical id: 25
+       slot: L1 Cache
+       size: 1MiB
+       capacity: 1MiB
+       capabilities: synchronous internal write-back instruction
+       configuration: level=1
+  *-cache:6
+       description: L2 cache
+       physical id: 26
+       slot: L2 Cache
+       size: 16MiB
+       capacity: 16MiB
+       capabilities: synchronous internal write-back unified
+       configuration: level=2
+  *-cache:7
+       description: L3 cache
+       physical id: 27
+       slot: L3 Cache
+       size: 36MiB
+       capacity: 36MiB
+       capabilities: synchronous internal write-back unified
+       configuration: level=3
+  *-memory UNCLAIMED
+       description: RAM memory
+       product: Raptor Lake-S PCH Shared SRAM
+       vendor: Intel Corporation
+       physical id: 14.2
+       bus info: pci@0000:00:14.2
+       version: 11
+       width: 64 bits
+       clock: 33MHz (30.3ns)
+       capabilities: pm cap_list
+       configuration: latency=0
+       resources: iomemory:440-43f iomemory:440-43f memory:4402114000-4402117fff memory:440211b000-440211bfff
+
+=== POST-RUN CPU FREQUENCY ===
+cpu MHz		: 5500.000
+cpu MHz		: 5500.000
+cpu MHz		: 1635.339
+cpu MHz		: 800.000
+cpu MHz		: 4545.679
+cpu MHz		: 800.000
+cpu MHz		: 5499.839
+cpu MHz		: 800.000
+cpu MHz		: 5499.791
+cpu MHz		: 800.000
+cpu MHz		: 5500.000
+cpu MHz		: 800.000
+cpu MHz		: 5365.127
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 2203.613
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 2928.463
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 1448.832
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 800.000
+cpu MHz		: 3429.345
+cpu MHz		: 3086.651
