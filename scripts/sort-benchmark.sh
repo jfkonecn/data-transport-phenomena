@@ -29,15 +29,11 @@ for ALGORITHM in "${ALGORITHMS[@]}"; do
 
         echo "Running $ALGORITHM on $FILE_NAME..."
 
-        # Create the new directory structure
-        ALGORITHM_DIR="$OUT_DIR/$RUN_NAME/$FILE_NAME/$ALGORITHM"
-        mkdir -p "$ALGORITHM_DIR"
-
         echo "CPU Test..."
-        taskset -c 0 zig build run -- "$ALGORITHM" "$INPUT_PATH" cpu "$RUN_NAME" --out-dir "$ALGORITHM_DIR"
+        taskset -c 0 zig build run -- "$ALGORITHM" "$INPUT_PATH" cpu "$RUN_NAME" --out-dir "$OUT_DIR"
 
         echo "Memory Test..."
-        taskset -c 0 zig build run -- "$ALGORITHM" "$INPUT_PATH" memory "$RUN_NAME" --out-dir "$ALGORITHM_DIR"
+        taskset -c 0 zig build run -- "$ALGORITHM" "$INPUT_PATH" memory "$RUN_NAME" --out-dir "$OUT_DIR"
     done
 done
 

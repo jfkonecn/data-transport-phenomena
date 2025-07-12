@@ -71,15 +71,17 @@ pub fn main() !void {
     const test_name = args[4];
 
     const extra_args = args[5..];
-    const out_dir = try std.fmt.allocPrint(allocator, "{s}/{s}", .{
+    const data_file_name = std.fs.path.basename(file_path);
+    const out_dir = try std.fmt.allocPrint(allocator, "{s}/{s}/{s}/{s}", .{
         getOutDirArg(extra_args),
-        @tagName(test_type),
+        test_name,
+        data_file_name,
+        algorithm_name,
     });
     defer allocator.free(out_dir);
 
     try std.fs.cwd().makePath(out_dir);
 
-    const data_file_name = std.fs.path.basename(file_path);
     const file = try std.fs.cwd().openFile(file_path, .{ .mode = .read_only });
     defer file.close();
 
@@ -88,11 +90,9 @@ pub fn main() !void {
     defer allocator.free(original_data);
     _ = try file.readAll(original_data);
 
-    const log_filename = try std.fmt.allocPrint(allocator, "{s}/{s}_{s}_{s}.csv", .{
+    const log_filename = try std.fmt.allocPrint(allocator, "{s}/{s}.csv", .{
         out_dir,
-        algorithm_name,
-        test_name,
-        data_file_name,
+        @tagName(test_type),
     });
     defer allocator.free(log_filename);
 
