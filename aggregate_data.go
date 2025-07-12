@@ -21,6 +21,7 @@ type CPUData struct {
 	Algorithm     string
 	File          string
 	FileSizeBytes int
+	TestSuite     string
 }
 
 // MemoryData represents a single memory allocation/free event
@@ -31,6 +32,7 @@ type MemoryData struct {
 	Algorithm           string
 	File                string
 	FileSizeBytes       int
+	TestSuite           string
 }
 
 // CPUStats holds aggregated statistics for CPU data
@@ -44,6 +46,7 @@ type CPUStats struct {
 	Min           int64
 	Max           int64
 	Count         int
+	TestSuite     string
 }
 
 // MemoryStats holds aggregated statistics for memory data
@@ -58,6 +61,7 @@ type MemoryStats struct {
 	MaxMemoryUsage     int64
 	AllocationCount    int
 	FreeCount          int
+	TestSuite          string
 }
 
 func main() {
@@ -68,11 +72,6 @@ func main() {
 			log.Println(err)
 		}
 	}()
-
-	// Delete the default "Sheet1" that gets created
-	if err := f.DeleteSheet("Sheet1"); err != nil {
-		log.Printf("Warning: could not delete default Sheet1: %v", err)
-	}
 
 	// Process CPU data
 	cpuStats, err := processCPUData("results")
@@ -100,6 +99,11 @@ func main() {
 		log.Fatalf("Error writing memory sheet: %v", err)
 	}
 
+	// Delete the default "Sheet1" that gets created
+	if err := f.DeleteSheet("Sheet1"); err != nil {
+		log.Printf("Warning: could not delete default Sheet1: %v", err)
+	}
+
 	// Save the file
 	if err := f.SaveAs("aggregate_data.xlsx"); err != nil {
 		log.Fatal(err)
@@ -108,31 +112,35 @@ func main() {
 	fmt.Println("Excel file 'aggregate_data.xlsx' created successfully!")
 }
 
-func sortCPUStats(stats []CPUStats) {
-	sort.Slice(stats, func(i, j int) bool {
-		if stats[i].Algorithm != stats[j].Algorithm {
-			return stats[i].Algorithm < stats[j].Algorithm
-		}
-		if stats[i].RunName != stats[j].RunName {
-			return stats[i].RunName < stats[j].RunName
-		}
-		return stats[i].FileSizeBytes < stats[j].FileSizeBytes
-	})
+func sortCPUStats(groupStats map[string][]CPUStats) {
+	for _, stats := range groupStats {
+		sort.Slice(stats, func(i, j int) bool {
+			if stats[i].Algorithm != stats[j].Algorithm {
+				return stats[i].Algorithm < stats[j].Algorithm
+			}
+			if stats[i].RunName != stats[j].RunName {
+				return stats[i].RunName < stats[j].RunName
+			}
+			return stats[i].FileSizeBytes < stats[j].FileSizeBytes
+		})
+	}
 }
 
-func sortMemoryStats(stats []MemoryStats) {
-	sort.Slice(stats, func(i, j int) bool {
-		if stats[i].Algorithm != stats[j].Algorithm {
-			return stats[i].Algorithm < stats[j].Algorithm
-		}
-		if stats[i].RunName != stats[j].RunName {
-			return stats[i].RunName < stats[j].RunName
-		}
-		return stats[i].FileSizeBytes < stats[j].FileSizeBytes
-	})
+func sortMemoryStats(groupStats map[string][]MemoryStats) {
+	for _, stats := range groupStats {
+		sort.Slice(stats, func(i, j int) bool {
+			if stats[i].Algorithm != stats[j].Algorithm {
+				return stats[i].Algorithm < stats[j].Algorithm
+			}
+			if stats[i].RunName != stats[j].RunName {
+				return stats[i].RunName < stats[j].RunName
+			}
+			return stats[i].FileSizeBytes < stats[j].FileSizeBytes
+		})
+	}
 }
 
-func processCPUData(cpuDir string) ([]CPUStats, error) {
+func processCPUData(cpuDir string) (map[string][]CPUStats, error) {
 	var allStats []CPUStats
 	algorithmFileMap := make(map[string][]CPUData)
 
@@ -151,7 +159,7 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 		}
 
 		// Extract information from file path
-		// Expected path: results/sort/<test-name>/<test-data-file>/<algorithm>/cpu.csv
+		// Expected path: results/<test-suite>/<test-name>/<test-data-file>/<algorithm>/cpu.csv
 		relPath, err := filepath.Rel(cpuDir, file)
 		if err != nil {
 			log.Printf("Warning: could not get relative path for %s: %v", file, err)
@@ -164,6 +172,7 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 			continue
 		}
 
+		testSuite := pathParts[0]
 		testName := pathParts[1]
 		testDataFile := pathParts[2]
 		algorithm := pathParts[3]
@@ -194,13 +203,14 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 				continue
 			}
 
-			key := fmt.Sprintf("%s_%s_%s", algorithm, testName, testDataFile)
+			key := fmt.Sprintf("%s_%s_%s_%s", testSuite, algorithm, testName, testDataFile)
 			algorithmFileMap[key] = append(algorithmFileMap[key], CPUData{
 				RunNumber:     runNumber,
 				TimeNs:        time,
 				Algorithm:     algorithm,
 				File:          testName,
 				FileSizeBytes: fileSizeBytes,
+				TestSuite:     testSuite,
 			})
 		}
 	}
@@ -217,18 +227,25 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 			continue
 		}
 
-		algorithm := parts[0]
-		runName := parts[1]
+		testSuite := parts[0]
+		algorithm := parts[1]
+		runName := parts[2]
 		file := key
 
-		stats := calculateCPUStats(data, algorithm, runName, file)
+		stats := calculateCPUStats(data, testSuite, algorithm, runName, file)
 		allStats = append(allStats, stats)
 	}
 
-	return allStats, nil
+	groupStats := make(map[string][]CPUStats)
+
+	for _, stat := range allStats {
+		groupStats[stat.TestSuite] = append(groupStats[stat.TestSuite], stat)
+	}
+
+	return groupStats, nil
 }
 
-func processMemoryData(memoryDir string) ([]MemoryStats, error) {
+func processMemoryData(memoryDir string) (map[string][]MemoryStats, error) {
 	var allStats []MemoryStats
 	algorithmFileMap := make(map[string][]MemoryData)
 
@@ -247,7 +264,7 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 		}
 
 		// Extract information from file path
-		// Expected path: results/sort/<test-name>/<test-data-file>/<algorithm>/memory.csv
+		// Expected path: results/<test-suite>/<test-name>/<test-data-file>/<algorithm>/memory.csv
 		relPath, err := filepath.Rel(memoryDir, file)
 		if err != nil {
 			log.Printf("Warning: could not get relative path for %s: %v", file, err)
@@ -260,6 +277,7 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 			continue
 		}
 
+		testSuite := pathParts[0]
 		testName := pathParts[1]
 		testDataFile := pathParts[2]
 		algorithm := pathParts[3]
@@ -293,7 +311,7 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 				continue
 			}
 
-			key := fmt.Sprintf("%s_%s_%s", algorithm, testName, testDataFile)
+			key := fmt.Sprintf("%s_%s_%s_%s", testSuite, algorithm, testName, testDataFile)
 			algorithmFileMap[key] = append(algorithmFileMap[key], MemoryData{
 				Alignment:           alignment,
 				AllocationType:      allocationType,
@@ -301,6 +319,7 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 				Algorithm:           algorithm,
 				File:                testDataFile,
 				FileSizeBytes:       fileSizeBytes,
+				TestSuite:           testSuite,
 			})
 		}
 	}
@@ -317,18 +336,25 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 			continue
 		}
 
-		algorithm := parts[0]
-		runName := parts[1]
+		testSuite := parts[0]
+		algorithm := parts[1]
+		runName := parts[2]
 		file := key
 
-		stats := calculateMemoryStats(data, algorithm, runName, file)
+		stats := calculateMemoryStats(data, testSuite, algorithm, runName, file)
 		allStats = append(allStats, stats)
 	}
 
-	return allStats, nil
+	groupStats := make(map[string][]MemoryStats)
+
+	for _, stat := range allStats {
+		groupStats[stat.TestSuite] = append(groupStats[stat.TestSuite], stat)
+	}
+
+	return groupStats, nil
 }
 
-func calculateCPUStats(data []CPUData, algorithm, runName, file string) CPUStats {
+func calculateCPUStats(data []CPUData, testSuite, algorithm, runName, file string) CPUStats {
 	if len(data) == 0 {
 		return CPUStats{Algorithm: algorithm, File: file}
 	}
@@ -368,10 +394,11 @@ func calculateCPUStats(data []CPUData, algorithm, runName, file string) CPUStats
 		Min:           min,
 		Max:           max,
 		Count:         len(data),
+		TestSuite:     testSuite,
 	}
 }
 
-func calculateMemoryStats(data []MemoryData, algorithm, runName, file string) MemoryStats {
+func calculateMemoryStats(data []MemoryData, testSuite, algorithm, runName, file string) MemoryStats {
 	if len(data) == 0 {
 		return MemoryStats{Algorithm: algorithm, File: file}
 	}
@@ -426,136 +453,137 @@ func calculateMemoryStats(data []MemoryData, algorithm, runName, file string) Me
 		MaxMemoryUsage:     maxMemory,
 		AllocationCount:    allocationCount,
 		FreeCount:          freeCount,
+		TestSuite:          testSuite,
 	}
 }
 
-func writeCPUSheet(f *excelize.File, stats []CPUStats) error {
-	// Create CPU sheet
-	sheetName := "CPU_Statistics"
-	_, err := f.NewSheet(sheetName)
-	if err != nil {
-		return fmt.Errorf("error creating CPU sheet: %w", err)
-	}
+func writeCPUSheet(f *excelize.File, groupStats map[string][]CPUStats) error {
+	for testSuite, stats := range groupStats {
+		sheetName := fmt.Sprintf("%s_cpu_stats", testSuite)
+		_, err := f.NewSheet(sheetName)
+		if err != nil {
+			return fmt.Errorf("error creating CPU sheet: %w", err)
+		}
 
-	// Write headers
-	headers := []string{"Algorithm", "Run Name", "File", "File Size (bytes)", "Average Time (ns)", "Std Dev", "Min Time (ns)", "Max Time (ns)", "Sample Count"}
-	for i, header := range headers {
-		cell := fmt.Sprintf("%c1", 'A'+i)
-		if err := f.SetCellValue(sheetName, cell, header); err != nil {
-			return fmt.Errorf("error setting header %s: %w", header, err)
+		headers := []string{"Algorithm", "Run Name", "File", "File Size (bytes)", "Average Time (ns)", "Std Dev", "Min Time (ns)", "Max Time (ns)", "Sample Count"}
+		for i, header := range headers {
+			cell := fmt.Sprintf("%c1", 'A'+i)
+			if err := f.SetCellValue(sheetName, cell, header); err != nil {
+				return fmt.Errorf("error setting header %s: %w", header, err)
+			}
 		}
-	}
 
-	// Write data
-	for i, stat := range stats {
-		row := i + 2
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), stat.Algorithm); err != nil {
-			return fmt.Errorf("error setting algorithm for row %d: %w", row, err)
+		// Write data
+		for i, stat := range stats {
+			row := i + 2
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), stat.Algorithm); err != nil {
+				return fmt.Errorf("error setting algorithm for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), stat.RunName); err != nil {
+				return fmt.Errorf("error setting run name for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), stat.File); err != nil {
+				return fmt.Errorf("error setting file for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), stat.FileSizeBytes); err != nil {
+				return fmt.Errorf("error setting file size for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), stat.Average); err != nil {
+				return fmt.Errorf("error setting average for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), stat.StdDev); err != nil {
+				return fmt.Errorf("error setting std dev for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("G%d", row), stat.Min); err != nil {
+				return fmt.Errorf("error setting min for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("H%d", row), stat.Max); err != nil {
+				return fmt.Errorf("error setting max for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("I%d", row), stat.Count); err != nil {
+				return fmt.Errorf("error setting count for row %d: %w", row, err)
+			}
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), stat.RunName); err != nil {
-			return fmt.Errorf("error setting run name for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), stat.File); err != nil {
-			return fmt.Errorf("error setting file for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), stat.FileSizeBytes); err != nil {
-			return fmt.Errorf("error setting file size for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), stat.Average); err != nil {
-			return fmt.Errorf("error setting average for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), stat.StdDev); err != nil {
-			return fmt.Errorf("error setting std dev for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("G%d", row), stat.Min); err != nil {
-			return fmt.Errorf("error setting min for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("H%d", row), stat.Max); err != nil {
-			return fmt.Errorf("error setting max for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("I%d", row), stat.Count); err != nil {
-			return fmt.Errorf("error setting count for row %d: %w", row, err)
-		}
-	}
 
-	// Auto-size columns
-	for i := 0; i < len(headers); i++ {
-		col := string(rune('A' + i))
-		if err := f.SetColWidth(sheetName, col, col, 15); err != nil {
-			return fmt.Errorf("error setting column width for %s: %w", col, err)
+		// Auto-size columns
+		for i := 0; i < len(headers); i++ {
+			col := string(rune('A' + i))
+			if err := f.SetColWidth(sheetName, col, col, 15); err != nil {
+				return fmt.Errorf("error setting column width for %s: %w", col, err)
+			}
 		}
-	}
 
-	// Create charts
-	if err := createCPUCharts(f, sheetName, stats); err != nil {
-		return fmt.Errorf("error creating CPU charts: %w", err)
-	}
+		// Create charts
+		if err := createCPUCharts(f, sheetName, stats); err != nil {
+			return fmt.Errorf("error creating CPU charts: %w", err)
+		}
 
+	}
 	return nil
 }
 
-func writeMemorySheet(f *excelize.File, stats []MemoryStats) error {
-	// Create Memory sheet
-	sheetName := "Memory_Statistics"
-	_, err := f.NewSheet(sheetName)
-	if err != nil {
-		return fmt.Errorf("error creating memory sheet: %w", err)
-	}
+func writeMemorySheet(f *excelize.File, groupStats map[string][]MemoryStats) error {
+	for testSuite, stats := range groupStats {
+		sheetName := fmt.Sprintf("%s_mem_stats", testSuite)
+		_, err := f.NewSheet(sheetName)
+		if err != nil {
+			return fmt.Errorf("error creating memory sheet: %w", err)
+		}
 
-	// Write headers
-	headers := []string{"Algorithm", "Run Name", "File", "File Size (bytes)", "Total Allocated (bytes)", "Total Freed (bytes)", "Average Memory Usage (bytes)", "Allocation Count", "Free Count"}
-	for i, header := range headers {
-		cell := fmt.Sprintf("%c1", 'A'+i)
-		if err := f.SetCellValue(sheetName, cell, header); err != nil {
-			return fmt.Errorf("error setting header %s: %w", header, err)
+		headers := []string{"Algorithm", "Run Name", "File", "File Size (bytes)", "Total Allocated (bytes)", "Total Freed (bytes)", "Average Memory Usage (bytes)", "Allocation Count", "Free Count"}
+		for i, header := range headers {
+			cell := fmt.Sprintf("%c1", 'A'+i)
+			if err := f.SetCellValue(sheetName, cell, header); err != nil {
+				return fmt.Errorf("error setting header %s: %w", header, err)
+			}
 		}
-	}
 
-	// Write data
-	for i, stat := range stats {
-		row := i + 2
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), stat.Algorithm); err != nil {
-			return fmt.Errorf("error setting algorithm for row %d: %w", row, err)
+		// Write data
+		for i, stat := range stats {
+			row := i + 2
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), stat.Algorithm); err != nil {
+				return fmt.Errorf("error setting algorithm for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), stat.RunName); err != nil {
+				return fmt.Errorf("error setting run name for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), stat.File); err != nil {
+				return fmt.Errorf("error setting file for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), stat.FileSizeBytes); err != nil {
+				return fmt.Errorf("error setting file size for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), stat.TotalAllocated); err != nil {
+				return fmt.Errorf("error setting total allocated for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), stat.TotalFreed); err != nil {
+				return fmt.Errorf("error setting total freed for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("G%d", row), stat.AverageMemoryUsage); err != nil {
+				return fmt.Errorf("error setting average memory usage for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("H%d", row), stat.AllocationCount); err != nil {
+				return fmt.Errorf("error setting allocation count for row %d: %w", row, err)
+			}
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("I%d", row), stat.FreeCount); err != nil {
+				return fmt.Errorf("error setting free count for row %d: %w", row, err)
+			}
 		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), stat.RunName); err != nil {
-			return fmt.Errorf("error setting run name for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), stat.File); err != nil {
-			return fmt.Errorf("error setting file for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), stat.FileSizeBytes); err != nil {
-			return fmt.Errorf("error setting file size for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), stat.TotalAllocated); err != nil {
-			return fmt.Errorf("error setting total allocated for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), stat.TotalFreed); err != nil {
-			return fmt.Errorf("error setting total freed for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("G%d", row), stat.AverageMemoryUsage); err != nil {
-			return fmt.Errorf("error setting average memory usage for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("H%d", row), stat.AllocationCount); err != nil {
-			return fmt.Errorf("error setting allocation count for row %d: %w", row, err)
-		}
-		if err := f.SetCellValue(sheetName, fmt.Sprintf("I%d", row), stat.FreeCount); err != nil {
-			return fmt.Errorf("error setting free count for row %d: %w", row, err)
-		}
-	}
 
-	// Auto-size columns
-	for i := 0; i < len(headers); i++ {
-		col := string(rune('A' + i))
-		if err := f.SetColWidth(sheetName, col, col, 20); err != nil {
-			return fmt.Errorf("error setting column width for %s: %w", col, err)
+		// Auto-size columns
+		for i := 0; i < len(headers); i++ {
+			col := string(rune('A' + i))
+			if err := f.SetColWidth(sheetName, col, col, 20); err != nil {
+				return fmt.Errorf("error setting column width for %s: %w", col, err)
+			}
 		}
-	}
 
-	// Create charts
-	if err := createMemoryCharts(f, sheetName, stats); err != nil {
-		return fmt.Errorf("error creating memory charts: %w", err)
-	}
+		// Create charts
+		if err := createMemoryCharts(f, sheetName, stats); err != nil {
+			return fmt.Errorf("error creating memory charts: %w", err)
+		}
 
+	}
 	return nil
 }
 
@@ -565,7 +593,7 @@ func createCPUCharts(f *excelize.File, sheetName string, stats []CPUStats) error
 	}
 
 	// Create a chart sheet for CPU performance comparison
-	chartSheetName := "CPU_Charts"
+	chartSheetName := fmt.Sprintf("%s_cpu_charts", sheetName)
 	_, err := f.NewSheet(chartSheetName)
 	if err != nil {
 		return fmt.Errorf("error creating CPU chart sheet: %w", err)
@@ -681,7 +709,7 @@ func createMemoryCharts(f *excelize.File, sheetName string, stats []MemoryStats)
 	}
 
 	// Create a chart sheet for memory analysis
-	chartSheetName := "Memory_Charts"
+	chartSheetName := fmt.Sprintf("%s_mem_charts", sheetName)
 	_, err := f.NewSheet(chartSheetName)
 	if err != nil {
 		return fmt.Errorf("error creating memory chart sheet: %w", err)
@@ -788,7 +816,6 @@ func createMemoryCharts(f *excelize.File, sheetName string, stats []MemoryStats)
 	if err := f.SetColWidth(chartSheetName, "B", "Z", 15); err != nil {
 		return fmt.Errorf("error setting column width: %w", err)
 	}
-
 	return nil
 }
 
