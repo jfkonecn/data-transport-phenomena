@@ -136,8 +136,8 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 	var allStats []CPUStats
 	algorithmFileMap := make(map[string][]CPUData)
 
-	// Read all CPU CSV files
-	files, err := filepath.Glob(filepath.Join(cpuDir, "*.csv"))
+	// Read all CPU CSV files recursively
+	files, err := filepath.Glob(filepath.Join(cpuDir, "**/*.csv"))
 	if err != nil {
 		return nil, fmt.Errorf("error globbing CPU files: %w", err)
 	}
@@ -149,20 +149,23 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 			continue
 		}
 
-		// Extract algorithm and run name from filename
-		baseName := filepath.Base(file)
-		// Remove .csv extension
-		baseName = strings.TrimSuffix(baseName, ".csv")
-		// Split by underscore to get algorithm and run info
-		parts := strings.Split(baseName, "_")
-		if len(parts) < 3 {
-			log.Printf("Warning: invalid filename format: %s", file)
+		// Extract information from file path
+		// Expected path: results/sort/<hardware-type>/<test-name>/<algorithm>/cpu.csv
+		relPath, err := filepath.Rel(cpuDir, file)
+		if err != nil {
+			log.Printf("Warning: could not get relative path for %s: %v", file, err)
 			continue
 		}
 
-		algorithm := parts[0]
-		runName := parts[1]                      // e.g., "i9"
-		fileInfo := strings.Join(parts[2:], "_") // e.g., "01_100.bin"
+		pathParts := strings.Split(relPath, string(filepath.Separator))
+		if len(pathParts) < 3 {
+			log.Printf("Warning: invalid path structure: %s", file)
+			continue
+		}
+
+		hardwareType := pathParts[0]  // e.g., "i9"
+		testName := pathParts[1]      // e.g., "01_100.bin"
+		algorithm := pathParts[2]     // e.g., "bubble-sort"
 
 		// Skip header
 		for i := 1; i < len(records); i++ {
@@ -190,12 +193,12 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 				continue
 			}
 
-			key := fmt.Sprintf("%s_%s_%s", algorithm, runName, fileInfo)
+			key := fmt.Sprintf("%s_%s_%s", algorithm, hardwareType, testName)
 			algorithmFileMap[key] = append(algorithmFileMap[key], CPUData{
 				RunNumber:     runNumber,
 				TimeNs:        time,
 				Algorithm:     algorithm,
-				File:          fileInfo,
+				File:          testName,
 				FileSizeBytes: fileSizeBytes,
 			})
 		}
@@ -228,8 +231,8 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 	var allStats []MemoryStats
 	algorithmFileMap := make(map[string][]MemoryData)
 
-	// Read all memory CSV files
-	files, err := filepath.Glob(filepath.Join(memoryDir, "*.csv"))
+	// Read all memory CSV files recursively
+	files, err := filepath.Glob(filepath.Join(memoryDir, "**/*.csv"))
 	if err != nil {
 		return nil, fmt.Errorf("error globbing memory files: %w", err)
 	}
@@ -241,20 +244,23 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 			continue
 		}
 
-		// Extract algorithm and file info from filename
-		baseName := filepath.Base(file)
-		// Remove .csv extension
-		baseName = strings.TrimSuffix(baseName, ".csv")
-		// Split by underscore to get algorithm and file info
-		parts := strings.Split(baseName, "_")
-		if len(parts) < 3 {
-			log.Printf("Warning: invalid filename format: %s", file)
+		// Extract information from file path
+		// Expected path: results/sort/<hardware-type>/<test-name>/<algorithm>/memory.csv
+		relPath, err := filepath.Rel(memoryDir, file)
+		if err != nil {
+			log.Printf("Warning: could not get relative path for %s: %v", file, err)
 			continue
 		}
 
-		algorithm := parts[0]
-		runName := parts[1]                      // e.g., "i9"
-		fileInfo := strings.Join(parts[2:], "_") // e.g., "01_100.bin"
+		pathParts := strings.Split(relPath, string(filepath.Separator))
+		if len(pathParts) < 3 {
+			log.Printf("Warning: invalid path structure: %s", file)
+			continue
+		}
+
+		hardwareType := pathParts[0]  // e.g., "i9"
+		testName := pathParts[1]      // e.g., "01_100.bin"
+		algorithm := pathParts[2]     // e.g., "bubble-sort"
 
 		// If file has no data (only header), skip it
 		if len(records) <= 1 {
@@ -285,13 +291,13 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 				continue
 			}
 
-			key := fmt.Sprintf("%s_%s_%s", algorithm, runName, fileInfo)
+			key := fmt.Sprintf("%s_%s_%s", algorithm, hardwareType, testName)
 			algorithmFileMap[key] = append(algorithmFileMap[key], MemoryData{
 				Alignment:           alignment,
 				AllocationType:      allocationType,
 				AllocationSizeBytes: allocationSizeBytes,
 				Algorithm:           algorithm,
-				File:                fileInfo,
+				File:                testName,
 				FileSizeBytes:       fileSizeBytes,
 			})
 		}
