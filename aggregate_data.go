@@ -759,7 +759,7 @@ func createMemoryCharts(f *excelize.File, sheetName string, stats []MemoryStats)
 				for _, stat := range algorithmData[algorithm] {
 					if stat.FileSizeBytes == fileSize {
 						// Use the maximum memory usage from the MemoryStats
-						maxMemory = stat.TotalAllocated
+						maxMemory = stat.MaxMemoryUsage
 						found = true
 						break
 					}
