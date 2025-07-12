@@ -75,7 +75,7 @@ func main() {
 	}
 
 	// Process CPU data
-	cpuStats, err := processCPUData("results/sort/cpu")
+	cpuStats, err := processCPUData("results")
 	if err != nil {
 		log.Fatalf("Error processing CPU data: %v", err)
 	}
@@ -88,7 +88,7 @@ func main() {
 	}
 
 	// Process Memory data
-	memoryStats, err := processMemoryData("results/sort/memory")
+	memoryStats, err := processMemoryData("results")
 	if err != nil {
 		log.Fatalf("Error processing memory data: %v", err)
 	}
@@ -136,8 +136,9 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 	var allStats []CPUStats
 	algorithmFileMap := make(map[string][]CPUData)
 
+	pattern := filepath.Join(cpuDir, "*/*/*/*/cpu.csv")
 	// Read all CPU CSV files recursively
-	files, err := filepath.Glob(filepath.Join(cpuDir, "**/*.csv"))
+	files, err := filepath.Glob(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("error globbing CPU files: %w", err)
 	}
@@ -150,7 +151,7 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 		}
 
 		// Extract information from file path
-		// Expected path: results/sort/<hardware-type>/<test-name>/<algorithm>/cpu.csv
+		// Expected path: results/sort/<test-name>/<test-data-file>/<algorithm>/cpu.csv
 		relPath, err := filepath.Rel(cpuDir, file)
 		if err != nil {
 			log.Printf("Warning: could not get relative path for %s: %v", file, err)
@@ -163,9 +164,9 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 			continue
 		}
 
-		hardwareType := pathParts[0]  // e.g., "i9"
-		testName := pathParts[1]      // e.g., "01_100.bin"
-		algorithm := pathParts[2]     // e.g., "bubble-sort"
+		testName := pathParts[1]
+		testDataFile := pathParts[2]
+		algorithm := pathParts[3]
 
 		// Skip header
 		for i := 1; i < len(records); i++ {
@@ -193,7 +194,7 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 				continue
 			}
 
-			key := fmt.Sprintf("%s_%s_%s", algorithm, hardwareType, testName)
+			key := fmt.Sprintf("%s_%s_%s", algorithm, testName, testDataFile)
 			algorithmFileMap[key] = append(algorithmFileMap[key], CPUData{
 				RunNumber:     runNumber,
 				TimeNs:        time,
@@ -218,7 +219,7 @@ func processCPUData(cpuDir string) ([]CPUStats, error) {
 
 		algorithm := parts[0]
 		runName := parts[1]
-		file := strings.Join(parts[2:], "_")
+		file := key
 
 		stats := calculateCPUStats(data, algorithm, runName, file)
 		allStats = append(allStats, stats)
@@ -231,8 +232,9 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 	var allStats []MemoryStats
 	algorithmFileMap := make(map[string][]MemoryData)
 
+	pattern := filepath.Join(memoryDir, "*/*/*/*/memory.csv")
 	// Read all memory CSV files recursively
-	files, err := filepath.Glob(filepath.Join(memoryDir, "**/*.csv"))
+	files, err := filepath.Glob(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("error globbing memory files: %w", err)
 	}
@@ -245,7 +247,7 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 		}
 
 		// Extract information from file path
-		// Expected path: results/sort/<hardware-type>/<test-name>/<algorithm>/memory.csv
+		// Expected path: results/sort/<test-name>/<test-data-file>/<algorithm>/memory.csv
 		relPath, err := filepath.Rel(memoryDir, file)
 		if err != nil {
 			log.Printf("Warning: could not get relative path for %s: %v", file, err)
@@ -258,9 +260,9 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 			continue
 		}
 
-		hardwareType := pathParts[0]  // e.g., "i9"
-		testName := pathParts[1]      // e.g., "01_100.bin"
-		algorithm := pathParts[2]     // e.g., "bubble-sort"
+		testName := pathParts[1]
+		testDataFile := pathParts[2]
+		algorithm := pathParts[3]
 
 		// If file has no data (only header), skip it
 		if len(records) <= 1 {
@@ -291,13 +293,13 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 				continue
 			}
 
-			key := fmt.Sprintf("%s_%s_%s", algorithm, hardwareType, testName)
+			key := fmt.Sprintf("%s_%s_%s", algorithm, testName, testDataFile)
 			algorithmFileMap[key] = append(algorithmFileMap[key], MemoryData{
 				Alignment:           alignment,
 				AllocationType:      allocationType,
 				AllocationSizeBytes: allocationSizeBytes,
 				Algorithm:           algorithm,
-				File:                testName,
+				File:                testDataFile,
 				FileSizeBytes:       fileSizeBytes,
 			})
 		}
@@ -317,7 +319,7 @@ func processMemoryData(memoryDir string) ([]MemoryStats, error) {
 
 		algorithm := parts[0]
 		runName := parts[1]
-		file := strings.Join(parts[2:], "_")
+		file := key
 
 		stats := calculateMemoryStats(data, algorithm, runName, file)
 		allStats = append(allStats, stats)
@@ -757,7 +759,7 @@ func createMemoryCharts(f *excelize.File, sheetName string, stats []MemoryStats)
 				for _, stat := range algorithmData[algorithm] {
 					if stat.FileSizeBytes == fileSize {
 						// Use the maximum memory usage from the MemoryStats
-						maxMemory = stat.MaxMemoryUsage
+						maxMemory = stat.TotalAllocated
 						found = true
 						break
 					}
