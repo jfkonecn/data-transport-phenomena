@@ -1,0 +1,11 @@
+run_number,run_time_ns,algorithm,file,file_size_bytes
+1,1073953,bubble-sort,07_25K.bin,25600
+2,1032808,bubble-sort,07_25K.bin,25600
+3,1075360,bubble-sort,07_25K.bin,25600
+4,1170723,bubble-sort,07_25K.bin,25600
+5,1065203,bubble-sort,07_25K.bin,25600
+6,1154578,bubble-sort,07_25K.bin,25600
+7,1063485,bubble-sort,07_25K.bin,25600
+8,1101193,bubble-sort,07_25K.bin,25600
+9,1275932,bubble-sort,07_25K.bin,25600
+10,1151088,bubble-sort,07_25K.bin,25600
