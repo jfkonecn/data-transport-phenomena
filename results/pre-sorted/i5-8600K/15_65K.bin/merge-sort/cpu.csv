@@ -1,0 +1,11 @@
+run_number,run_time_ns,algorithm,file,file_size_bytes
+1,392500080,merge-sort,15_65K.bin,66560
+2,393663290,merge-sort,15_65K.bin,66560
+3,393678720,merge-sort,15_65K.bin,66560
+4,393331764,merge-sort,15_65K.bin,66560
+5,393192943,merge-sort,15_65K.bin,66560
+6,394015489,merge-sort,15_65K.bin,66560
+7,393245558,merge-sort,15_65K.bin,66560
+8,393057681,merge-sort,15_65K.bin,66560
+9,393873674,merge-sort,15_65K.bin,66560
+10,394300104,merge-sort,15_65K.bin,66560
